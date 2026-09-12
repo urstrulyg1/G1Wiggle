@@ -8,6 +8,9 @@ node_modules/
 
 # Production
 /dist
+/release
+/dist-electron
+/.icon-tmp
 
 # Misc
 .DS_Store

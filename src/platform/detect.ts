@@ -27,9 +27,18 @@ export function detectEnvironment(): EnvironmentInfo {
     typeof window.matchMedia === "function" &&
     window.matchMedia("(display-mode: standalone)").matches;
 
+  const isElectron =
+    typeof navigator !== "undefined" &&
+    (/Electron/i.test(ua) ||
+      (typeof window !== "undefined" && Boolean((window as unknown as { electronAPI?: unknown }).electronAPI)));
+
   let env: EnvironmentInfo = {
     ...FALLBACK,
-    runtime: isStandalone ? "Standalone PWA" : "Web browser runtime",
+    runtime: isElectron
+      ? "Desktop Native (Electron)"
+      : isStandalone
+        ? "Standalone PWA"
+        : "Web browser runtime",
   };
 
   if (/Win/i.test(platform) || /Windows/i.test(ua)) {

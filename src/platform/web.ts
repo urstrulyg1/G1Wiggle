@@ -106,7 +106,16 @@ class WebWakeLock implements WakeLockBridge {
 
   async acquire(): Promise<boolean> {
     this.requested = true;
-    if (!this.isSupported()) return false;
+    const electronAPI =
+      typeof window !== "undefined"
+        ? (window as unknown as { electronAPI?: { setPowerSave?: (v: boolean) => void } }).electronAPI
+        : undefined;
+
+    if (electronAPI?.setPowerSave) {
+      electronAPI.setPowerSave(true);
+    }
+
+    if (!this.isSupported()) return Boolean(electronAPI);
     try {
       if (this.sentinel) return true;
       this.sentinel = await navigator.wakeLock.request("screen");
@@ -118,6 +127,10 @@ class WebWakeLock implements WakeLockBridge {
       return true;
     } catch {
       this.sentinel = null;
+      if (electronAPI?.setPowerSave) {
+        this.notify(true);
+        return true;
+      }
       this.notify(false);
       return false;
     }
@@ -125,6 +138,15 @@ class WebWakeLock implements WakeLockBridge {
 
   async release(): Promise<void> {
     this.requested = false;
+    const electronAPI =
+      typeof window !== "undefined"
+        ? (window as unknown as { electronAPI?: { setPowerSave?: (v: boolean) => void } }).electronAPI
+        : undefined;
+
+    if (electronAPI?.setPowerSave) {
+      electronAPI.setPowerSave(false);
+    }
+
     if (this.sentinel) {
       try {
         await this.sentinel.release();

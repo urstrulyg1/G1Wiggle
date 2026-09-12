@@ -103,10 +103,28 @@ npm run dev
 npm run test
 ```
 
-### Build
+### Web Build
 
 ```bash
 npm run build
+```
+
+### Desktop Packaging (macOS & Windows)
+
+The automated `build.sh` script generates native production releases in `release/`:
+
+```bash
+# Package both macOS (.dmg) and Windows (.exe)
+./build.sh --all
+
+# Package macOS Disk Images only (Apple Silicon arm64 & Intel x64)
+./build.sh --mac
+
+# Package Windows Installers & Portable Executables (x64 & x86/ia32)
+./build.sh --win
+
+# Clean build caches before packaging
+./build.sh --clean
 ```
 
 ## License
