@@ -42,6 +42,18 @@ describe("platform adapter", () => {
     expect(typeof off).toBe("function");
     expect(() => off()).not.toThrow();
   });
+
+  it("exposes wakeLock and battery bridges safely in test environment", async () => {
+    const adapter = getAdapter();
+    expect(typeof adapter.wakeLock.isSupported).toBe("function");
+    expect(typeof adapter.wakeLock.isActive).toBe("function");
+    expect(typeof adapter.battery.isSupported).toBe("function");
+    const unwatch = adapter.wakeLock.watch(() => undefined);
+    expect(typeof unwatch).toBe("function");
+    unwatch();
+    const batt = await adapter.battery.getInfo();
+    expect(batt === null || typeof batt.level === "number").toBe(true);
+  });
 });
 
 describe("permission gate predicate", () => {

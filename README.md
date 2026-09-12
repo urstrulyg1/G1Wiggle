@@ -5,21 +5,27 @@ An elegant, modern cursor automation and workstation keep-alive platform designe
 ## Features
 
 - ⚡ **Dynamic Cursor Engine**: Harmonic movement patterns including Jitter, Sine Wave, Lissajous Figure 8, and Organic Brownian Random Walk.
+- 🛡️ **Hardware Screen Wake Lock API**: Hardware-level keep-awake lock that actively prevents OS display sleep, screensaver timeout, and system lock.
+- ⏱️ **Background Worker Anti-Throttling**: Inline Web Worker thread heartbeat that prevents browser timer throttling in inactive or minimized background tabs.
+- 🔊 **Procedural Audio Feedback**: Zero-dependency procedural Web Audio micro-chimes and woodblock clicks for session starts, pauses, stops, and steps.
+- 📊 **Lifetime Keep-Alive Analytics**: Local privacy-first metrics tracking all-time & daily keep-alive duration, movements, and estimated sleep timeouts prevented.
+- 🌙 **OLED Ambient Fullscreen Mode**: Ultra-dark, distraction-free digital clock and session keep-alive status monitor (`F` key toggle, `Esc` exit).
+- 🔋 **Battery & Power Awareness**: Battery Status API integration warning and adapting intervals when running on low battery (< 20%).
 - 🕒 **Intelligent Scheduler**: Time-based active windows that automatically engage during work hours and disengage when off the clock.
-- 🛡️ **Screen Wake Lock API**: Prevents OS display standby and system lock.
-- 🎯 **Profile Customization**: Fine-tune amplitude, speed, interval period, and movement radius.
-- ⌨️ **Global Shortcut Triggering**: Quick toggle and pause hotkeys.
-- 🎨 **Sleek Dark Interface**: Responsive glassmorphic UI built with React & Tailwind tokens.
+- 💾 **Complete Backup & Restore**: One-click JSON backup export and import for all configurations, custom profiles, schedules, and analytics.
+- 📱 **Progressive Web App (PWA)**: Desktop-installable standalone experience on macOS, Windows, Linux, and ChromeOS.
 
 ## Project Structure
 
 ```
 project-root/
 ├── public/
-│   └── icon.svg
+│   ├── icon.svg
+│   └── manifest.webmanifest
 │
 ├── src/
 │   ├── components/
+│   │   ├── AmbientModal.tsx
 │   │   ├── controls.tsx
 │   │   ├── CursorStage.tsx
 │   │   ├── Logo.tsx
@@ -34,8 +40,10 @@ project-root/
 │   │   ├── persistence.ts
 │   │   ├── scheduler.ts
 │   │   ├── shortcuts.ts
+│   │   ├── sound.ts
 │   │   ├── time.ts
-│   │   └── types.ts
+│   │   ├── types.ts
+│   │   └── workerTimer.ts
 │   │
 │   ├── pages/
 │   │   ├── About.tsx

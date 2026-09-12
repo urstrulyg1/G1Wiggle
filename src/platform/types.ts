@@ -28,6 +28,7 @@ export interface PlatformCapabilities {
   systemTray: CapabilityStatus;
   startup: CapabilityStatus;
   notifications: CapabilityStatus;
+  wakeLock: CapabilityStatus;
 }
 
 export interface EnvironmentInfo {
@@ -82,6 +83,25 @@ export interface ThemeBridge {
   watch(cb: (scheme: "light" | "dark") => void): () => void;
 }
 
+export interface WakeLockBridge {
+  isSupported(): boolean;
+  isActive(): boolean;
+  acquire(): Promise<boolean>;
+  release(): Promise<void>;
+  watch(cb: (active: boolean) => void): () => void;
+}
+
+export interface BatteryInfo {
+  level: number; // 0..1
+  charging: boolean;
+}
+
+export interface BatteryBridge {
+  isSupported(): boolean;
+  getInfo(): Promise<BatteryInfo | null>;
+  watch(cb: (info: BatteryInfo) => void): () => void;
+}
+
 export interface PlatformAdapter {
   environment: EnvironmentInfo;
   capabilities(): PlatformCapabilities;
@@ -91,6 +111,8 @@ export interface PlatformAdapter {
   tray: TrayBridge;
   startup: StartupBridge;
   theme: ThemeBridge;
+  wakeLock: WakeLockBridge;
+  battery: BatteryBridge;
 }
 
 /** Should the UI block with a permission gate for this capability? */

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { AmbientModal } from "./components/AmbientModal";
 import { PermissionGate } from "./components/PermissionGate";
 import { Sidebar, type PageId } from "./components/Sidebar";
 import { ToastStack } from "./components/ToastStack";
@@ -43,6 +44,26 @@ export default function App() {
       offPause();
     };
   }, [shortcuts]);
+
+  /* ambient mode hotkey (F) */
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT")
+      )
+        return;
+      if (e.key === "f" || e.key === "F") {
+        e.preventDefault();
+        useStore.setState((s) => ({ ambientOpen: !s.ambientOpen }));
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   /* scheduler supervisor — light 5 s cadence */
   useEffect(() => {
@@ -124,6 +145,7 @@ export default function App() {
         </AnimatePresence>
       </main>
 
+      <AmbientModal />
       <PermissionGate />
       <ToastStack />
     </div>

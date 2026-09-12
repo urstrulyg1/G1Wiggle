@@ -4,9 +4,12 @@ import {
   AlertTriangle,
   CalendarClock,
   Info,
+  Maximize2,
   Pause,
   Play,
   Plus,
+  Shield,
+  ShieldCheck,
   Square,
 } from "lucide-react";
 import { Card, Divider } from "../components/controls";
@@ -246,6 +249,53 @@ function ScheduleBanner({ onNavigate }: { onNavigate: (p: PageId) => void }) {
   );
 }
 
+function AnalyticsCard() {
+  const stats = useStore((s) => s.stats);
+  const timeoutsAvoided = Math.floor(stats.totalKeepAliveMs / (5 * 60 * 1000));
+
+  return (
+    <Card
+      title="Keep-Alive Insights"
+      description="All-time metrics stored privately on this device."
+    >
+      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+        <div className="rounded-xl border border-border bg-elevated px-3.5 py-3">
+          <div className="text-[9.5px] font-bold uppercase tracking-[0.16em] text-fg3">
+            Today Active
+          </div>
+          <div className="mt-1 font-mono text-[16px] font-bold text-fg tabular">
+            {formatHMS(stats.todayKeepAliveMs)}
+          </div>
+        </div>
+        <div className="rounded-xl border border-border bg-elevated px-3.5 py-3">
+          <div className="text-[9.5px] font-bold uppercase tracking-[0.16em] text-fg3">
+            Lifetime Total
+          </div>
+          <div className="mt-1 font-mono text-[16px] font-bold text-fg tabular">
+            {formatHMS(stats.totalKeepAliveMs)}
+          </div>
+        </div>
+        <div className="rounded-xl border border-border bg-elevated px-3.5 py-3">
+          <div className="text-[9.5px] font-bold uppercase tracking-[0.16em] text-fg3">
+            Movements
+          </div>
+          <div className="mt-1 font-mono text-[16px] font-bold text-fg tabular">
+            {stats.totalMovements.toLocaleString()}
+          </div>
+        </div>
+        <div className="rounded-xl border border-border bg-elevated px-3.5 py-3">
+          <div className="text-[9.5px] font-bold uppercase tracking-[0.16em] text-fg3">
+            Locks Prevented
+          </div>
+          <div className="mt-1 font-mono text-[16px] font-bold text-primary2 tabular">
+            ~{timeoutsAvoided.toLocaleString()}
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
 /* ------------------------------------------------------------------ */
 
 function ProfileQuickSwitch() {
@@ -297,6 +347,8 @@ export function Dashboard({ onNavigate }: { onNavigate: (p: PageId) => void }) {
     const id = s.runtime.currentProfileId ?? s.config.activeProfileId;
     return s.config.profiles.find((p) => p.id === id) ?? s.config.profiles[0];
   });
+  const wakeLockActive = useStore((s) => s.wakeLockActive);
+  const setAmbientOpen = useStore((s) => s.setAmbientOpen);
   const toggle = useStore((s) => s.toggle);
   const togglePause = useStore((s) => s.togglePause);
   const pauseCombo = useStore((s) => s.config.shortcuts.pause);
@@ -314,11 +366,26 @@ export function Dashboard({ onNavigate }: { onNavigate: (p: PageId) => void }) {
 
   return (
     <div className="mx-auto w-full max-w-[1120px]">
-      <header className="mb-6">
-        <h1 className="font-display text-[26px] font-bold tracking-tight text-fg">Dashboard</h1>
-        <p className="mt-1 text-[13.5px] text-fg3">
-          Your activity session at a glance — everything runs locally and offline.
-        </p>
+      <header className="mb-6 flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="font-display text-[26px] font-bold tracking-tight text-fg">Dashboard</h1>
+          <p className="mt-1 text-[13.5px] text-fg3">
+            Your activity session at a glance — everything runs locally and offline.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setAmbientOpen(true)}
+            className="flex items-center gap-2 rounded-xl border border-border bg-elevated px-3 py-2 text-[12.5px] font-medium text-fg2 transition-colors hover:border-border2 hover:text-fg"
+            title="Open Fullscreen Ambient View (Press F)"
+          >
+            <Maximize2 size={14} className="text-primary" />
+            <span>Ambient View</span>
+            <kbd className="rounded border border-border px-1.5 py-0.5 font-mono text-[10px] text-fg3">
+              F
+            </kbd>
+          </button>
+        </div>
       </header>
 
       <div className="grid grid-cols-1 gap-5 2xl:grid-cols-12">
@@ -326,7 +393,20 @@ export function Dashboard({ onNavigate }: { onNavigate: (p: PageId) => void }) {
         <div className="min-w-0 2xl:col-span-7">
           <Card className="h-full">
             <div className="flex items-center justify-between gap-3">
-              <StatusPill />
+              <div className="flex items-center gap-2">
+                <StatusPill />
+                {wakeLockActive ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/40 bg-primary/10 px-2.5 py-1 font-mono text-[10.5px] font-semibold text-primary2">
+                    <ShieldCheck size={12} className="text-primary" />
+                    Wake Lock Active
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-elevated px-2.5 py-1 font-mono text-[10.5px] text-fg3">
+                    <Shield size={12} />
+                    Standby Guard
+                  </span>
+                )}
+              </div>
               <span className="hidden font-mono text-[11px] text-fg3 sm:block">
                 {MODE_META[profile.mode].label} mode · {profile.name}
               </span>
@@ -418,6 +498,11 @@ export function Dashboard({ onNavigate }: { onNavigate: (p: PageId) => void }) {
           <div className="min-w-0">
             <ActivityLog />
           </div>
+        </div>
+
+        {/* insights span */}
+        <div className="min-w-0 2xl:col-span-12">
+          <AnalyticsCard />
         </div>
       </div>
     </div>

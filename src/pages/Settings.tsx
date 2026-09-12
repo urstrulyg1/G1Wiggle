@@ -1,6 +1,18 @@
 import { useState } from "react";
-import { Bell, MonitorCheck, RotateCcw, ShieldCheck } from "lucide-react";
+import {
+  Battery,
+  BatteryCharging,
+  Bell,
+  Download,
+  MonitorCheck,
+  RotateCcw,
+  Shield,
+  ShieldCheck,
+  Upload,
+  Volume2,
+} from "lucide-react";
 import { Card, Row, Segmented, Toggle } from "../components/controls";
+import { sound } from "../lib/sound";
 import { getAdapter } from "../platform/web";
 import type { CapabilityState } from "../platform/types";
 import { useStore } from "../store/useStore";
@@ -133,6 +145,217 @@ function NotificationRow() {
 
 /* ------------------------------------------------------------------ */
 
+function KeepAwakeCard() {
+  const wakeLockEnabled = useStore((s) => s.config.settings.wakeLockEnabled);
+  const wakeLockActive = useStore((s) => s.wakeLockActive);
+  const updateSettings = useStore((s) => s.updateSettings);
+  const adapter = getAdapter();
+  const supported = adapter.wakeLock.isSupported();
+
+  return (
+    <Card
+      title="Display & Keep-Awake"
+      description="Hardware keep-alive lock prevents your operating system from sleeping or blanking the display."
+    >
+      <Row
+        label="Screen Wake Lock API"
+        hint="Acquires a screen wake lock while wiggling is active to guarantee uninterrupted uptime."
+      >
+        <Toggle
+          checked={wakeLockEnabled}
+          disabled={!supported}
+          onChange={(v) => updateSettings({ wakeLockEnabled: v })}
+          label="Screen Wake Lock"
+        />
+      </Row>
+      <div className="mt-2 flex items-center gap-2 rounded-lg border border-border bg-elevated px-3 py-2 text-[12px] text-fg3">
+        {supported ? (
+          wakeLockActive ? (
+            <>
+              <ShieldCheck size={14} className="text-primary" />
+              <span className="font-medium text-primary2">
+                Wake Lock is currently active and guarding the display.
+              </span>
+            </>
+          ) : (
+            <>
+              <Shield size={14} className="text-fg3" />
+              <span>Supported — automatically engages whenever a wiggling session starts.</span>
+            </>
+          )
+        ) : (
+          <>
+            <Shield size={14} className="text-warning" />
+            <span>
+              Screen Wake Lock is not supported in this browser; the cursor engine continues
+              operating normally.
+            </span>
+          </>
+        )}
+      </div>
+    </Card>
+  );
+}
+
+function SoundCard() {
+  const soundEnabled = useStore((s) => s.config.settings.soundEnabled);
+  const soundVolume = useStore((s) => s.config.settings.soundVolume);
+  const updateSettings = useStore((s) => s.updateSettings);
+
+  return (
+    <Card
+      title="Audio Feedback"
+      description="Micro-chimes and clicks synthesized locally with zero network or audio files."
+    >
+      <Row
+        label="Sound effects"
+        hint="Plays gentle tones on start, pause, resume, step, and completion."
+      >
+        <Toggle
+          checked={soundEnabled}
+          onChange={(v) => updateSettings({ soundEnabled: v })}
+          label="Sound feedback"
+        />
+      </Row>
+      {soundEnabled && (
+        <div className="mt-4 space-y-3 border-t border-border pt-3">
+          <div className="flex items-center justify-between">
+            <span className="text-[13px] font-medium text-fg">Volume</span>
+            <span className="font-mono text-[12px] text-fg3">{soundVolume}%</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <Volume2 size={15} className="shrink-0 text-fg3" />
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={soundVolume}
+              onChange={(e) => updateSettings({ soundVolume: Number(e.target.value) })}
+              className="w-full cursor-pointer accent-primary"
+            />
+            <button
+              onClick={() => sound.playStart(soundVolume)}
+              className="shrink-0 rounded-lg border border-border bg-elevated px-2.5 py-1 text-[11.5px] font-medium text-fg2 hover:border-border2 hover:text-fg"
+            >
+              Test Chime
+            </button>
+          </div>
+        </div>
+      )}
+    </Card>
+  );
+}
+
+function PowerCard() {
+  const batterySaverEnabled = useStore((s) => s.config.settings.batterySaverEnabled);
+  const battery = useStore((s) => s.battery);
+  const updateSettings = useStore((s) => s.updateSettings);
+
+  return (
+    <Card
+      title="Power & Battery"
+      description="Intelligent power awareness for laptops and portable devices."
+    >
+      <Row
+        label="Battery Saver Awareness"
+        hint="Notifies you and optimizes timers when the device is discharging below 20%."
+      >
+        <Toggle
+          checked={batterySaverEnabled}
+          onChange={(v) => updateSettings({ batterySaverEnabled: v })}
+          label="Battery saver"
+        />
+      </Row>
+      <div className="mt-2 flex items-center gap-2 rounded-lg border border-border bg-elevated px-3 py-2 text-[12px] text-fg3">
+        {battery ? (
+          <>
+            {battery.charging ? (
+              <BatteryCharging size={14} className="text-primary2" />
+            ) : (
+              <Battery size={14} className={battery.level <= 0.2 ? "text-warning" : "text-fg3"} />
+            )}
+            <span>
+              Battery: {Math.round(battery.level * 100)}% ({battery.charging ? "Charging" : "Discharging"})
+            </span>
+          </>
+        ) : (
+          <>
+            <BatteryCharging size={14} className="text-primary2" />
+            <span>Power: Desktop or AC Connected</span>
+          </>
+        )}
+      </div>
+    </Card>
+  );
+}
+
+function BackupRestoreCard() {
+  const exportFullBackupJson = useStore((s) => s.exportFullBackupJson);
+  const importFullBackupJson = useStore((s) => s.importFullBackupJson);
+  const resetStats = useStore((s) => s.resetStats);
+  const toast = useStore((s) => s.toast);
+
+  const handleDownload = () => {
+    const json = exportFullBackupJson();
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `g1wiggle-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast("Backup exported", "Full configuration and statistics downloaded.", "success");
+  };
+
+  const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const text = String(reader.result || "");
+      importFullBackupJson(text);
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  };
+
+  return (
+    <Card
+      title="Backup & Portability"
+      description="Export or restore your complete configuration, custom profiles, schedules, and lifetime statistics."
+    >
+      <div className="flex flex-wrap items-center gap-3">
+        <button
+          onClick={handleDownload}
+          className="flex items-center gap-2 rounded-xl border border-border bg-elevated px-3.5 py-2 text-[12.5px] font-medium text-fg2 transition-colors hover:border-border2 hover:text-fg"
+        >
+          <Download size={14} />
+          Export Complete Backup
+        </button>
+
+        <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-border bg-elevated px-3.5 py-2 text-[12.5px] font-medium text-fg2 transition-colors hover:border-border2 hover:text-fg">
+          <Upload size={14} />
+          Restore from Backup
+          <input type="file" accept=".json" onChange={handleUpload} className="hidden" />
+        </label>
+
+        <button
+          onClick={() => {
+            resetStats();
+            toast("Stats reset", "Lifetime keep-alive statistics cleared.", "info");
+          }}
+          className="ml-auto flex items-center gap-2 rounded-xl border border-border bg-elevated px-3.5 py-2 text-[12.5px] font-medium text-fg3 transition-colors hover:border-error/40 hover:text-error"
+        >
+          <RotateCcw size={13} />
+          Reset Analytics
+        </button>
+      </div>
+    </Card>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+
 export function Settings() {
   const theme = useStore((s) => s.config.theme);
   const setTheme = useStore((s) => s.setTheme);
@@ -202,6 +425,11 @@ export function Settings() {
             </div>
           )}
         </Card>
+
+        <KeepAwakeCard />
+        <SoundCard />
+        <PowerCard />
+        <BackupRestoreCard />
 
         <Card title="Window & tray" description="How the main window behaves.">
           <Row

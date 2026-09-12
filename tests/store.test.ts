@@ -91,7 +91,7 @@ describe("store state machine", () => {
   it("counts movements as timers fire", () => {
     const st = () => useStore.getState();
     st().start();
-    vi.advanceTimersByTime(40000); // Default profile: 30 s interval
+    vi.advanceTimersByTime(50000); // Default profile: 30 s interval ± 35% (max 40.5 s)
     expect(st().runtime.movements).toBeGreaterThanOrEqual(1);
     st().stop("user");
     vi.clearAllTimers();
@@ -122,5 +122,28 @@ describe("profile management", () => {
     expect(ok).toBe(false);
     const ok2 = st().setShortcuts({ toggle: "Ctrl+Alt+G", pause: "Ctrl+Alt+P" });
     expect(ok2).toBe(true);
+  });
+});
+
+describe("backup and analytics", () => {
+  it("exports and imports a full application backup", () => {
+    const st = useStore.getState();
+    const backupJson = st.exportFullBackupJson();
+    expect(typeof backupJson).toBe("string");
+    const parsed = JSON.parse(backupJson);
+    expect(parsed.app).toBe("G1Wiggle");
+    expect(parsed.kind).toBe("full_backup");
+    expect(parsed.config.profiles.length).toBeGreaterThan(0);
+
+    const success = st.importFullBackupJson(backupJson);
+    expect(success).toBe(true);
+    expect(st.importFullBackupJson("invalid json")).toBe(false);
+  });
+
+  it("resets statistics cleanly", () => {
+    const st = useStore.getState();
+    st.resetStats();
+    expect(useStore.getState().stats.totalKeepAliveMs).toBe(0);
+    expect(useStore.getState().stats.totalMovements).toBe(0);
   });
 });

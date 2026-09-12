@@ -20,22 +20,31 @@ import {
 } from "../lib/engine";
 import {
   defaultConfig,
+  defaultStats,
+  exportFullBackup,
   exportProfiles,
+  importFullBackup,
   importProfiles,
   parseConfig,
+  parseStats,
   sanitizeProfile,
   sanitizeSchedule,
   serializeConfig,
+  serializeStats,
   uid,
   uniqueName,
   CONFIG_VERSION,
   STORAGE_KEY,
+  STATS_KEY,
 } from "../lib/persistence";
 import { activeWindow, nextScheduledWindow, describeSchedule } from "../lib/scheduler";
+import { sound } from "../lib/sound";
 import { formatHMS } from "../lib/time";
+import { createHeartbeatTimer, type HeartbeatTimer } from "../lib/workerTimer";
 import { getAdapter } from "../platform/web";
 import type {
   AppConfig,
+  LifetimeStats,
   LogEntry,
   Profile,
   Schedule,
@@ -127,6 +136,16 @@ interface Store {
   updateSchedule: (id: string, patch: Partial<Schedule>) => void;
   deleteSchedule: (id: string) => void;
 
+  stats: LifetimeStats;
+  wakeLockActive: boolean;
+  ambientOpen: boolean;
+  battery: { level: number; charging: boolean } | null;
+
+  setAmbientOpen: (open: boolean) => void;
+  resetStats: () => void;
+  exportFullBackupJson: () => string;
+  importFullBackupJson: (json: string) => boolean;
+
   setTheme: (t: ThemeMode) => void;
   setShortcuts: (s: ShortcutMap) => boolean;
   updateSettings: (patch: Partial<AppConfig["settings"]>) => void;
@@ -189,6 +208,8 @@ class Engine {
   private scheduleKey: string | null = null;
   private delayEndAt = 0;
 
+  private heartbeat: HeartbeatTimer = createHeartbeatTimer();
+
   constructor(private set: typeof useStore.setState, private get: typeof useStore.getState) {}
 
   private profile(): Profile {
@@ -201,7 +222,18 @@ class Engine {
     this.set((s) => ({ runtime: { ...s.runtime, ...patch } }));
   }
 
+  private syncWakeLock(shouldAcquire: boolean) {
+    const { config } = this.get();
+    const adapter = getAdapter();
+    if (shouldAcquire && config.settings.wakeLockEnabled) {
+      adapter.wakeLock.acquire().catch(() => {});
+    } else {
+      adapter.wakeLock.release().catch(() => {});
+    }
+  }
+
   private clearTimers() {
+    this.heartbeat.stop();
     for (const key of [
       "moveTimer",
       "returnTimer",
@@ -255,6 +287,18 @@ class Engine {
     notify("G1Wiggle — session started", `Profile: ${profile.name}`);
     toast("Wiggling started", `Profile “${profile.name}” is now active.`, "success");
 
+    this.syncWakeLock(true);
+    if (config.settings.soundEnabled) sound.playStart(config.settings.soundVolume);
+
+    this.set((s) => {
+      const stats: LifetimeStats = {
+        ...s.stats,
+        totalSessionsStarted: s.stats.totalSessionsStarted + 1,
+      };
+      storageSet(STATS_KEY, serializeStats(stats));
+      return { stats };
+    });
+
     const delayMs = Math.max(0, profile.startDelaySec * 1000);
     if (delayMs > 0) {
       this.delayEndAt = Date.now() + delayMs;
@@ -295,6 +339,9 @@ class Engine {
     );
     const target: Vec2 = { x: this.origin.x + clamped.x, y: this.origin.y + clamped.y };
     const now = Date.now();
+
+    const { config } = this.get();
+    if (config.settings.soundEnabled) sound.playStep(config.settings.soundVolume);
 
     this.set((s) => ({
       runtime: {
@@ -351,7 +398,7 @@ class Engine {
   }
 
   private startTick() {
-    this.tickTimer = setInterval(() => {
+    const handleTick = () => {
       const { runtime } = this.get();
       if (runtime.status !== "active") return;
       const now = Date.now();
@@ -367,12 +414,20 @@ class Engine {
       if (this.endsAt !== null && now >= this.endsAt) {
         this.stop("completed");
       }
-    }, 100);
+    };
+
+    this.heartbeat.start(100, handleTick);
+    this.tickTimer = setInterval(handleTick, 100);
   }
 
   pause(auto = false) {
     const { runtime } = this.get();
     if (nextStatus(runtime.status, "pause") === null) return;
+    this.syncWakeLock(false);
+    this.heartbeat.stop();
+    const { config } = this.get();
+    if (config.settings.soundEnabled) sound.playPause(config.settings.soundVolume);
+
     const now = Date.now();
     this.baseElapsed += now - this.resumedAt;
     this.remainToNext = this.moveTimer ? Math.max(250, this.nextAt - now) : 1000;
@@ -407,6 +462,10 @@ class Engine {
   resume() {
     const { runtime } = this.get();
     if (nextStatus(runtime.status, "resume") === null) return;
+    this.syncWakeLock(true);
+    const { config } = this.get();
+    if (config.settings.soundEnabled) sound.playResume(config.settings.soundVolume);
+
     const now = Date.now();
     this.resumedAt = now;
     this.endsAt = this.remainSession === null ? null : now + this.remainSession;
@@ -424,6 +483,11 @@ class Engine {
   stop(reason: "user" | "completed" | "schedule" = "user") {
     const { runtime } = this.get();
     if (nextStatus(runtime.status, "stop") === null) return;
+    this.syncWakeLock(false);
+    this.heartbeat.stop();
+    const { config } = this.get();
+    if (config.settings.soundEnabled) sound.playStop(config.settings.soundVolume);
+
     this.clearTimers();
     const elapsed = this.baseElapsed + (this.resumedAt ? Date.now() - this.resumedAt : 0);
     const moves = runtime.movements;
@@ -432,18 +496,38 @@ class Engine {
     if (reason === "user" && this.scheduleKey) suppressedWindows.add(this.scheduleKey);
     this.scheduleKey = null;
 
-    this.set((s) => ({
-      runtime: idleRuntime(),
-      log: pushLog(
-        s.log,
-        "stop",
-        reason === "completed"
-          ? `Session completed — ${summary}.`
-          : reason === "schedule"
-            ? `Scheduled session ended — ${summary}.`
-            : `Session stopped — ${summary}.`,
-      ),
-    }));
+    const todayDate = new Date();
+    const todayStr = `${todayDate.getFullYear()}-${String(todayDate.getMonth() + 1).padStart(2, "0")}-${String(todayDate.getDate()).padStart(2, "0")}`;
+
+    this.set((s) => {
+      const isToday = s.stats.lastActiveDate === todayStr;
+      const stats: LifetimeStats = {
+        totalKeepAliveMs: s.stats.totalKeepAliveMs + elapsed,
+        totalMovements: s.stats.totalMovements + moves,
+        totalSessionsStarted: s.stats.totalSessionsStarted,
+        totalSessionsCompleted:
+          reason === "completed"
+            ? s.stats.totalSessionsCompleted + 1
+            : s.stats.totalSessionsCompleted,
+        todayKeepAliveMs: (isToday ? s.stats.todayKeepAliveMs : 0) + elapsed,
+        lastActiveDate: todayStr,
+      };
+      storageSet(STATS_KEY, serializeStats(stats));
+
+      return {
+        runtime: idleRuntime(),
+        stats,
+        log: pushLog(
+          s.log,
+          "stop",
+          reason === "completed"
+            ? `Session completed — ${summary}.`
+            : reason === "schedule"
+              ? `Scheduled session ended — ${summary}.`
+              : `Session stopped — ${summary}.`,
+        ),
+      };
+    });
 
     if (reason === "completed") {
       notify("G1Wiggle — session completed", summary);
@@ -519,6 +603,38 @@ export const useStore = create<Store>()((set, get) => ({
   log: [],
   toasts: [],
   configuredFromBackup: initial.repaired,
+  stats: parseStats(storageGet(STATS_KEY)),
+  wakeLockActive: false,
+  ambientOpen: false,
+  battery: null,
+
+  setAmbientOpen: (ambientOpen) => set({ ambientOpen }),
+  resetStats: () => {
+    const stats = defaultStats();
+    storageSet(STATS_KEY, serializeStats(stats));
+    set({ stats });
+  },
+  exportFullBackupJson: () => {
+    const { config, stats } = get();
+    return exportFullBackup(config, stats);
+  },
+  importFullBackupJson: (json: string) => {
+    try {
+      const { config, stats } = importFullBackup(json);
+      persist(config);
+      if (stats) {
+        storageSet(STATS_KEY, serializeStats(stats));
+        set({ config, stats });
+      } else {
+        set({ config });
+      }
+      get().toast("Backup restored", "Configuration and statistics have been restored.", "success");
+      return true;
+    } catch (err) {
+      get().toast("Restore failed", err instanceof Error ? err.message : "Invalid backup file.", "error");
+      return false;
+    }
+  },
 
   toast: (title, body, kind = "info") =>
     set((s) => ({
@@ -744,3 +860,24 @@ function persist(config: AppConfig) {
 }
 
 const engine = new Engine(useStore.setState, useStore.getState);
+
+if (typeof window !== "undefined") {
+  const adapter = getAdapter();
+  adapter.wakeLock.watch((active) => {
+    useStore.setState({ wakeLockActive: active });
+  });
+  adapter.battery.getInfo().then((b) => {
+    if (b) useStore.setState({ battery: b });
+  });
+  adapter.battery.watch((b) => {
+    useStore.setState({ battery: b });
+    const { config, toast } = useStore.getState();
+    if (config.settings.batterySaverEnabled && !b.charging && b.level <= 0.2) {
+      toast(
+        "Battery low",
+        "Battery is under 20% — consider plugging in to prevent workstation sleep.",
+        "info",
+      );
+    }
+  });
+}

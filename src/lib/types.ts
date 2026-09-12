@@ -101,6 +101,19 @@ export interface AppSettings {
   notificationsEnabled: boolean;
   /** repository link shown on the About page — empty = not configured */
   repositoryUrl: string;
+  wakeLockEnabled: boolean;
+  soundEnabled: boolean;
+  soundVolume: number;
+  batterySaverEnabled: boolean;
+}
+
+export interface LifetimeStats {
+  totalKeepAliveMs: number;
+  totalMovements: number;
+  totalSessionsCompleted: number;
+  totalSessionsStarted: number;
+  todayKeepAliveMs: number;
+  lastActiveDate: string;
 }
 
 export interface AppConfig {

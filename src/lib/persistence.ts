@@ -8,6 +8,7 @@
 
 import type {
   AppConfig,
+  LifetimeStats,
   MovementMode,
   Profile,
   Schedule,
@@ -118,6 +119,10 @@ export function defaultConfig(): AppConfig {
       startActivityAfterLaunch: false,
       notificationsEnabled: false,
       repositoryUrl: "",
+      wakeLockEnabled: true,
+      soundEnabled: true,
+      soundVolume: 35,
+      batterySaverEnabled: true,
     },
   };
 }
@@ -264,6 +269,10 @@ export function parseConfig(raw: string | null): { config: AppConfig; repaired: 
         notificationsEnabled: bool(settingsRaw.notificationsEnabled, false),
         repositoryUrl:
           typeof settingsRaw.repositoryUrl === "string" ? settingsRaw.repositoryUrl : "",
+        wakeLockEnabled: bool(settingsRaw.wakeLockEnabled, true),
+        soundEnabled: bool(settingsRaw.soundEnabled, true),
+        soundVolume: num(settingsRaw.soundVolume, 35, 0, 100),
+        batterySaverEnabled: bool(settingsRaw.batterySaverEnabled, true),
       },
     };
     return { config, repaired: false };
@@ -274,6 +283,55 @@ export function parseConfig(raw: string | null): { config: AppConfig; repaired: 
 
 export function serializeConfig(config: AppConfig): string {
   return JSON.stringify(config);
+}
+
+/* ------------------------------------------------------------------ */
+/* lifetime statistics persistence                                     */
+/* ------------------------------------------------------------------ */
+
+export const STATS_KEY = "g1wiggle.stats.v1";
+
+export function defaultStats(): LifetimeStats {
+  const now = new Date();
+  const yyyy = now.getFullYear();
+  const mm = String(now.getMonth() + 1).padStart(2, "0");
+  const dd = String(now.getDate()).padStart(2, "0");
+  return {
+    totalKeepAliveMs: 0,
+    totalMovements: 0,
+    totalSessionsCompleted: 0,
+    totalSessionsStarted: 0,
+    todayKeepAliveMs: 0,
+    lastActiveDate: `${yyyy}-${mm}-${dd}`,
+  };
+}
+
+export function parseStats(raw: string | null): LifetimeStats {
+  const base = defaultStats();
+  if (!raw) return base;
+  try {
+    const data = JSON.parse(raw) as Record<string, unknown>;
+    if (!data || typeof data !== "object") return base;
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    const lastActiveDate = typeof data.lastActiveDate === "string" ? data.lastActiveDate : today;
+    const isToday = lastActiveDate === today;
+
+    return {
+      totalKeepAliveMs: num(data.totalKeepAliveMs, 0, 0, Number.MAX_SAFE_INTEGER),
+      totalMovements: num(data.totalMovements, 0, 0, Number.MAX_SAFE_INTEGER),
+      totalSessionsCompleted: num(data.totalSessionsCompleted, 0, 0, Number.MAX_SAFE_INTEGER),
+      totalSessionsStarted: num(data.totalSessionsStarted, 0, 0, Number.MAX_SAFE_INTEGER),
+      todayKeepAliveMs: isToday ? num(data.todayKeepAliveMs, 0, 0, Number.MAX_SAFE_INTEGER) : 0,
+      lastActiveDate: today,
+    };
+  } catch {
+    return base;
+  }
+}
+
+export function serializeStats(stats: LifetimeStats): string {
+  return JSON.stringify(stats);
 }
 
 /* ------------------------------------------------------------------ */
@@ -318,6 +376,49 @@ export function importProfiles(json: string): Profile[] {
     return { ...p, id: uid("profile"), createdAt: Date.now() };
   });
   return profiles;
+}
+
+/* ------------------------------------------------------------------ */
+/* full application backup & restore                                   */
+/* ------------------------------------------------------------------ */
+
+export interface FullBackupExport {
+  app: "G1Wiggle";
+  kind: "full_backup";
+  version: number;
+  exportedAt: string;
+  config: AppConfig;
+  stats?: LifetimeStats;
+}
+
+export function exportFullBackup(config: AppConfig, stats?: LifetimeStats): string {
+  const payload: FullBackupExport = {
+    app: "G1Wiggle",
+    kind: "full_backup",
+    version: CONFIG_VERSION,
+    exportedAt: new Date().toISOString(),
+    config,
+    stats,
+  };
+  return JSON.stringify(payload, null, 2);
+}
+
+export function importFullBackup(json: string): { config: AppConfig; stats?: LifetimeStats } {
+  let data: unknown;
+  try {
+    data = JSON.parse(json);
+  } catch {
+    throw new Error("The backup file is not valid JSON.");
+  }
+  if (!data || typeof data !== "object") throw new Error("Invalid backup structure.");
+  const record = data as Record<string, unknown>;
+  const rawConfig = record.config ? JSON.stringify(record.config) : json;
+  const { config } = parseConfig(rawConfig);
+  let stats: LifetimeStats | undefined;
+  if (record.stats && typeof record.stats === "object") {
+    stats = parseStats(JSON.stringify(record.stats));
+  }
+  return { config, stats };
 }
 
 /** Ensure a profile name is unique by appending " 2", " 3", … */
