@@ -35,14 +35,14 @@ function MatrixCell({ cell }: { cell: Cell }) {
 }
 
 const MATRIX: { feature: string; cells: [Cell, Cell, Cell, Cell] }[] = [
-  { feature: "Mouse movement", cells: [true, true, true, "Preview"] },
+  { feature: "Mouse movement", cells: [true, true, true, "Web Canvas"] },
   { feature: "Movement patterns & randomisation", cells: [true, true, true, true] },
   { feature: "Profiles", cells: [true, true, true, true] },
   { feature: "Scheduling", cells: [true, true, true, true] },
-  { feature: "Keyboard activity", cells: [true, true, true, "Simulated"] },
+  { feature: "Keyboard activity", cells: [true, true, true, "Browser Events"] },
   { feature: "System tray", cells: [true, true, true, "In-app"] },
   { feature: "Global shortcuts", cells: [true, true, true, "Window"] },
-  { feature: "Launch at startup", cells: [true, true, true, "Remembered"] },
+  { feature: "Launch at startup", cells: [true, true, true, "Local Preference"] },
   { feature: "Notifications", cells: [true, true, true, true] },
   { feature: "Dark / light / system themes", cells: [true, true, true, true] },
 ];
@@ -117,8 +117,7 @@ export function About() {
           </Chip>
         </div>
         <p className="mt-3 max-w-[440px] text-[12.5px] leading-relaxed text-fg3">
-          Part of the G1 utility family — alongside G1Code and G1DM. An independent, original
-          implementation; not affiliated with any other mouse-jiggler product.
+          Created by urstrulyg1. An independent, open-source workstation keep-alive platform.
         </p>
       </div>
 
@@ -175,7 +174,7 @@ export function About() {
             <Scale size={16} className="mt-0.5 shrink-0 text-primary2" />
             <div className="text-[12.5px] leading-relaxed text-fg3">
               <p>
-                Designed and engineered by <span className="font-medium text-fg2">G1 Labs</span>.
+                Designed and engineered by <span className="font-medium text-fg2">urstrulyg1</span>.
                 Type by <span className="font-medium text-fg2">Space Grotesk</span>,{" "}
                 <span className="font-medium text-fg2">Inter</span> and{" "}
                 <span className="font-medium text-fg2">JetBrains Mono</span>; icons by{" "}
@@ -190,7 +189,7 @@ export function About() {
           <Divider />
           <Row
             label="Source repository"
-            hint={repositoryUrl ? undefined : "Not configured — set settings.repositoryUrl in config/app.json once the repository is published."}
+            hint={repositoryUrl ? undefined : "Not configured."}
           >
             {repositoryUrl ? (
               <a
@@ -213,7 +212,7 @@ export function About() {
       </div>
 
       <p className="mt-8 text-center font-mono text-[11px] text-fg3">
-        © {new Date().getFullYear()} G1 Labs · G1Wiggle is and will always be free.
+        © {new Date().getFullYear()} urstrulyg1 · G1Wiggle is and will always be free and open source.
       </p>
     </div>
   );
