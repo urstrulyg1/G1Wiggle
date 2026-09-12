@@ -74,5 +74,20 @@
   },
   "portable": {
     "artifactName": "${productName}-Portable-${version}-${arch}.${ext}"
+  },
+  "linux": {
+    "icon": "build/icon.png",
+    "category": "Utility",
+    "target": [
+      {
+        "target": "AppImage",
+        "arch": ["x64", "arm64"]
+      },
+      {
+        "target": "deb",
+        "arch": ["x64", "arm64"]
+      }
+    ],
+    "artifactName": "${productName}-${version}-${arch}.${ext}"
   }
 }

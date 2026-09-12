@@ -109,18 +109,28 @@ npm run test
 npm run build
 ```
 
-### Desktop Packaging (macOS & Windows)
+### Desktop Packaging (Zero-Config)
 
-The automated `build.sh` script generates native production releases in `release/`:
+The automated `build.sh` script automatically detects your current operating system and packages native production installers into `release/` with **zero flags required**:
 
 ```bash
-# Package both macOS (.dmg) and Windows (.exe)
+# Automatically detects OS (macOS -> .dmg, Windows -> .exe, Linux -> AppImage)
+./build.sh
+
+# Or via npm script:
+npm run build:desktop
+```
+
+#### Optional Manual Overrides
+
+```bash
+# Cross-compile all targets
 ./build.sh --all
 
-# Package macOS Disk Images only (Apple Silicon arm64 & Intel x64)
+# Force macOS Disk Images (Apple Silicon arm64 & Intel x64)
 ./build.sh --mac
 
-# Package Windows Installers & Portable Executables (x64 & x86/ia32)
+# Force Windows Installers & Portable Executables (x64 & x86/ia32)
 ./build.sh --win
 
 # Clean build caches before packaging

@@ -20,7 +20,8 @@
     "electron:build": "electron-builder",
     "electron:mac": "electron-builder --mac --x64 --arm64",
     "electron:win": "electron-builder --win --x64 --ia32",
-    "electron:all": "electron-builder --mac --win --x64 --arm64 --ia32"
+    "electron:all": "electron-builder --mac --win --x64 --arm64 --ia32",
+    "build:desktop": "./build.sh"
   },
   "dependencies": {
     "clsx": "2.1.1",
