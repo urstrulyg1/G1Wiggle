@@ -1,21 +1,27 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# G1Wiggle — Zero-Config Desktop Packaging Script
+# G1Wiggle — Zero-Config Hardware & OS Desktop Packaging Script
 # 
-# Automatically detects host operating system:
-#   - macOS: Builds .dmg & .zip for Apple Silicon (arm64) & Intel (x64)
-#   - Windows: Builds .exe installers & portables for 64-bit (x64) & 32-bit (x86/ia32)
-#   - Linux: Builds AppImage & .deb for 64-bit (x64) & ARM64
+# Automatically detects host operating system AND hardware architecture:
+#   - Apple Silicon Mac (M1/M2/M3/M4): Builds macOS arm64 .dmg
+#   - Intel Mac (x86_64): Builds macOS x64 .dmg
+#   - 64-bit Windows PC: Builds Windows x64 .exe (Installer & Portable)
+#   - 32-bit Windows PC: Builds Windows x86/ia32 .exe (Installer & Portable)
+#   - Linux PC: Builds AppImage & deb for host architecture
 #
 # Usage (no flags required):
-#   ./build.sh                  # Automatically detects OS and builds native packages
+#   ./build.sh                  # Detects host OS + hardware and builds native binary
 #
-# Optional manual overrides:
-#   ./build.sh --all            # Builds all desktop platforms
-#   ./build.sh --mac            # Forces macOS build (.dmg)
-#   ./build.sh --win            # Forces Windows build (.exe)
-#   ./build.sh --linux          # Forces Linux build (AppImage / deb)
-#   ./build.sh --clean          # Wipes previous dist/ and release/ before building
+# Optional overrides:
+#   ./build.sh --all            # Builds all operating systems and architectures
+#   ./build.sh --all-arch       # Builds all architectures for the detected OS
+#   ./build.sh --mac            # Forces macOS build
+#   ./build.sh --win            # Forces Windows build
+#   ./build.sh --linux          # Forces Linux build
+#   ./build.sh --arm64          # Forces ARM64 architecture
+#   ./build.sh --x64            # Forces x64 architecture
+#   ./build.sh --ia32           # Forces x86 (32-bit) architecture
+#   ./build.sh --clean          # Wipes previous dist/ and release/ before build
 # ==============================================================================
 
 set -euo pipefail
@@ -27,37 +33,75 @@ GREEN='\033[0;32m'
 CYAN='\033[0;36m'
 YELLOW='\033[0;33m'
 RED='\033[0;31m'
+PURPLE='\033[0;35m'
 NC='\033[0m' # No Color
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
-# 1. Auto-detect host operating system
+# 1. Hardware and OS auto-detection
 UNAME_S="$(uname -s 2>/dev/null || echo 'Unknown')"
-DETECTED_OS="unknown"
-DETECTED_DESC="Unknown"
+UNAME_M="$(uname -m 2>/dev/null || echo 'Unknown')"
+CPU_MODEL=""
 
+if [ "$UNAME_S" = "Darwin" ]; then
+  CPU_MODEL="$(sysctl -n machdep.cpu.brand_string 2>/dev/null || echo '')"
+fi
+
+DETECTED_OS="unknown"
+DETECTED_ARCH="unknown"
+OS_NAME="Unknown"
+ARCH_NAME="Unknown"
+
+# Detect OS
 case "$UNAME_S" in
   Darwin*)
     DETECTED_OS="mac"
-    DETECTED_DESC="macOS (.dmg for Apple Silicon arm64 & Intel x64)"
+    OS_NAME="macOS"
     ;;
   MINGW*|MSYS*|CYGWIN*|Windows_NT*)
     DETECTED_OS="win"
-    DETECTED_DESC="Windows (.exe for 64-bit x64 & 32-bit x86/ia32)"
+    OS_NAME="Windows"
     ;;
   Linux*)
     DETECTED_OS="linux"
-    DETECTED_DESC="Linux (AppImage & deb for x64 & arm64)"
+    OS_NAME="Linux"
     ;;
   *)
-    DETECTED_OS="all"
-    DETECTED_DESC="All platforms"
+    DETECTED_OS="mac"
+    OS_NAME="macOS"
     ;;
 esac
 
+# Detect Hardware Architecture
+case "$UNAME_M" in
+  arm64|aarch64)
+    DETECTED_ARCH="arm64"
+    if [ "$DETECTED_OS" = "mac" ]; then
+      ARCH_NAME="Apple Silicon (arm64)"
+    else
+      ARCH_NAME="ARM64 (aarch64)"
+    fi
+    ;;
+  x86_64|amd64|AMD64)
+    DETECTED_ARCH="x64"
+    ARCH_NAME="Intel / AMD 64-bit (x64)"
+    ;;
+  i386|i686|x86)
+    DETECTED_ARCH="ia32"
+    ARCH_NAME="Intel / AMD 32-bit (x86)"
+    ;;
+  *)
+    DETECTED_ARCH="x64"
+    ARCH_NAME="x64"
+    ;;
+esac
+
+# Default target and arch from auto-detection
 TARGET="$DETECTED_OS"
-EXPLICIT_TARGET=false
+TARGET_ARCH="$DETECTED_ARCH"
+BUILD_ALL_ARCH=false
+EXPLICIT_CONFIG=false
 CLEAN_FIRST=false
 SKIP_TESTS=false
 
@@ -66,19 +110,36 @@ for arg in "$@"; do
   case "$arg" in
     --mac|-m|mac)
       TARGET="mac"
-      EXPLICIT_TARGET=true
+      EXPLICIT_CONFIG=true
       ;;
     --win|-w|win)
       TARGET="win"
-      EXPLICIT_TARGET=true
+      EXPLICIT_CONFIG=true
       ;;
     --linux|-l|linux)
       TARGET="linux"
-      EXPLICIT_TARGET=true
+      EXPLICIT_CONFIG=true
+      ;;
+    --arm64)
+      TARGET_ARCH="arm64"
+      EXPLICIT_CONFIG=true
+      ;;
+    --x64)
+      TARGET_ARCH="x64"
+      EXPLICIT_CONFIG=true
+      ;;
+    --ia32|--x86)
+      TARGET_ARCH="ia32"
+      EXPLICIT_CONFIG=true
+      ;;
+    --all-arch)
+      BUILD_ALL_ARCH=true
+      EXPLICIT_CONFIG=true
       ;;
     --all|-a|all)
       TARGET="all"
-      EXPLICIT_TARGET=true
+      BUILD_ALL_ARCH=true
+      EXPLICIT_CONFIG=true
       ;;
     --clean|-c)
       CLEAN_FIRST=true
@@ -87,40 +148,48 @@ for arg in "$@"; do
       SKIP_TESTS=true
       ;;
     --help|-h)
-      echo -e "${BOLD}G1Wiggle Zero-Config Desktop Packaging Utility${NC}"
+      echo -e "${BOLD}G1Wiggle Zero-Config Hardware & OS Packaging Utility${NC}"
       echo ""
-      echo -e "Usage: ${CYAN}./build.sh${NC} ${DIM}(no flags needed - automatically detects current OS)${NC}"
+      echo -e "Usage: ${CYAN}./build.sh${NC} ${DIM}(no flags needed - automatically detects OS and hardware architecture)${NC}"
       echo ""
       echo -e "Optional overrides:"
-      echo -e "  ${CYAN}--all, -a${NC}        Cross-compile both macOS and Windows"
-      echo -e "  ${CYAN}--mac, -m${NC}        Build macOS DMGs (Apple Silicon arm64 & Intel x64)"
-      echo -e "  ${CYAN}--win, -w${NC}        Build Windows EXEs (64-bit x64 & 32-bit x86/ia32)"
-      echo -e "  ${CYAN}--linux, -l${NC}      Build Linux packages (AppImage & deb)"
+      echo -e "  ${CYAN}--all, -a${NC}        Cross-compile all operating systems and architectures"
+      echo -e "  ${CYAN}--all-arch${NC}       Build all architectures for the current OS (e.g. arm64 + x64)"
+      echo -e "  ${CYAN}--mac, -m${NC}        Build for macOS"
+      echo -e "  ${CYAN}--win, -w${NC}        Build for Windows"
+      echo -e "  ${CYAN}--linux, -l${NC}      Build for Linux"
+      echo -e "  ${CYAN}--arm64${NC}          Force Apple Silicon / ARM64 build"
+      echo -e "  ${CYAN}--x64${NC}            Force Intel / AMD 64-bit build"
+      echo -e "  ${CYAN}--ia32, --x86${NC}    Force 32-bit x86 build"
       echo -e "  ${CYAN}--clean, -c${NC}      Clean dist/ and release/ directories before packaging"
       echo -e "  ${CYAN}--skip-tests${NC}     Skip running the Vitest automated test suite"
       echo -e "  ${CYAN}--help, -h${NC}       Show this help documentation"
       exit 0
       ;;
     *)
-      echo -e "${YELLOW}Warning: Unknown option '$arg'. Using auto-detected OS ($DETECTED_OS).${NC}"
+      echo -e "${YELLOW}Warning: Unknown option '$arg'. Using detected hardware (${OS_NAME} ${ARCH_NAME}).${NC}"
       ;;
   esac
 done
 
 echo ""
 echo -e "${GREEN}${BOLD}======================================================${NC}"
-echo -e "${GREEN}${BOLD}       G1Wiggle — Zero-Config Packaging Engine        ${NC}"
+echo -e "${GREEN}${BOLD}    G1Wiggle — Hardware & OS Auto-Packaging Engine    ${NC}"
 echo -e "${GREEN}${BOLD}======================================================${NC}"
 
-if [ "$EXPLICIT_TARGET" = false ]; then
-  echo -e " 🖥️  ${BOLD}Auto-detected OS:${NC} ${GREEN}${BOLD}${UNAME_S}${NC} → Target: ${CYAN}${DETECTED_DESC}${NC}"
-  echo -e "     ${DIM}(Running in zero-flag mode - no flags required)${NC}"
+if [ "$EXPLICIT_CONFIG" = false ]; then
+  echo -e " 🖥️  ${BOLD}Detected Operating System:${NC}  ${GREEN}${BOLD}${OS_NAME}${NC} (${UNAME_S})"
+  echo -e " ⚡ ${BOLD}Detected Hardware Arch:${NC}     ${PURPLE}${BOLD}${ARCH_NAME}${NC} (${UNAME_M})"
+  if [ -n "$CPU_MODEL" ]; then
+    echo -e " 🏎️  ${BOLD}Detected Processor:${NC}         ${CYAN}${CPU_MODEL}${NC}"
+  fi
+  echo -e " 🎯 ${BOLD}Action:${NC}                     Building native package for this hardware"
+  echo -e "     ${DIM}(Zero-flag mode: zero flags passed or required)${NC}"
 else
-  echo -e " 🎯 ${BOLD}Target Override:${NC}   ${CYAN}${TARGET}${NC}"
+  echo -e " 🎯 ${BOLD}Target Override:${NC}   ${CYAN}${TARGET}${NC} (arch: ${CYAN}${TARGET_ARCH}${NC}, all-arch: ${CYAN}${BUILD_ALL_ARCH}${NC})"
 fi
 
-echo -e " ⚡ ${DIM}Node Environment:${NC}  $(node -v)"
-echo -e " 📦 ${DIM}Machine Arch:${NC}      $(uname -m)"
+echo -e " ⚙️  ${DIM}Node Environment:${NC}  $(node -v)"
 echo ""
 
 # 0. Clean if requested
@@ -153,22 +222,37 @@ echo -e "${CYAN}📦 [5/5] Packaging desktop binaries with electron-builder...${
 
 case "$TARGET" in
   mac)
-    echo -e "   → Building macOS DMGs (Apple Silicon arm64 + Intel x64)..."
-    npx electron-builder --mac --config electron-builder.json
+    if [ "$BUILD_ALL_ARCH" = true ]; then
+      echo -e "   → Packaging macOS DMGs for all architectures (Apple Silicon arm64 + Intel x64)..."
+      npx electron-builder --mac --arm64 --x64 --config electron-builder.json
+    else
+      echo -e "   → Packaging macOS DMG specifically for detected hardware (${TARGET_ARCH})..."
+      npx electron-builder --mac "--${TARGET_ARCH}" --config electron-builder.json
+    fi
     ;;
   win)
-    echo -e "   → Building Windows EXEs (64-bit x64 + 32-bit ia32/x86)..."
-    npx electron-builder --win --config electron-builder.json
+    if [ "$BUILD_ALL_ARCH" = true ]; then
+      echo -e "   → Packaging Windows EXEs for all architectures (64-bit x64 + 32-bit ia32/x86)..."
+      npx electron-builder --win --x64 --ia32 --config electron-builder.json
+    else
+      echo -e "   → Packaging Windows EXE specifically for detected hardware (${TARGET_ARCH})..."
+      npx electron-builder --win "--${TARGET_ARCH}" --config electron-builder.json
+    fi
     ;;
   linux)
-    echo -e "   → Building Linux packages (AppImage + deb)..."
-    npx electron-builder --linux --config electron-builder.json
+    if [ "$BUILD_ALL_ARCH" = true ]; then
+      echo -e "   → Packaging Linux packages for all architectures (x64 + arm64)..."
+      npx electron-builder --linux --x64 --arm64 --config electron-builder.json
+    else
+      echo -e "   → Packaging Linux package specifically for detected hardware (${TARGET_ARCH})..."
+      npx electron-builder --linux "--${TARGET_ARCH}" --config electron-builder.json
+    fi
     ;;
   all)
-    echo -e "   → Building macOS DMGs (arm64 + x64)..."
-    npx electron-builder --mac --config electron-builder.json
-    echo -e "   → Building Windows EXEs (x64 + ia32/x86)..."
-    npx electron-builder --win --config electron-builder.json
+    echo -e "   → Cross-compiling macOS DMGs (arm64 + x64)..."
+    npx electron-builder --mac --arm64 --x64 --config electron-builder.json
+    echo -e "   → Cross-compiling Windows EXEs (x64 + ia32/x86)..."
+    npx electron-builder --win --x64 --ia32 --config electron-builder.json
     ;;
 esac
 
@@ -176,7 +260,7 @@ echo ""
 echo -e "${GREEN}${BOLD}======================================================${NC}"
 echo -e "${GREEN}${BOLD}       Packaging Completed Successfully!             ${NC}"
 echo -e "${GREEN}${BOLD}======================================================${NC}"
-echo -e "${BOLD}Generated Artifacts in release/:${NC}"
+echo -e "${BOLD}Generated Native Hardware Artifacts in release/:${NC}"
 echo ""
 
 if [ -d "release" ]; then
@@ -184,5 +268,5 @@ if [ -d "release" ]; then
 fi
 
 echo ""
-echo -e "${CYAN}Desktop packages are ready in:${NC} ${BOLD}${SCRIPT_DIR}/release/${NC}"
+echo -e "${CYAN}Your native desktop package is ready in:${NC} ${BOLD}${SCRIPT_DIR}/release/${NC}"
 echo ""
