@@ -1,7 +1,14 @@
 {
   "name": "g1wiggle",
-  "private": true,
   "version": "1.0.0",
+  "description": "An elegant, modern cursor automation and workstation keep-alive platform",
+  "author": "urstrulyg1",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/urstrulyg1/G1Wiggle.git"
+  },
+  "homepage": "https://github.com/urstrulyg1/G1Wiggle#readme",
   "type": "module",
   "scripts": {
     "dev": "vite",

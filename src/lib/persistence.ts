@@ -118,7 +118,7 @@ export function defaultConfig(): AppConfig {
       launchAtStartup: false,
       startActivityAfterLaunch: false,
       notificationsEnabled: false,
-      repositoryUrl: "",
+      repositoryUrl: "https://github.com/urstrulyg1/G1Wiggle",
       wakeLockEnabled: true,
       soundEnabled: true,
       soundVolume: 35,
@@ -268,7 +268,9 @@ export function parseConfig(raw: string | null): { config: AppConfig; repaired: 
         startActivityAfterLaunch: bool(settingsRaw.startActivityAfterLaunch, false),
         notificationsEnabled: bool(settingsRaw.notificationsEnabled, false),
         repositoryUrl:
-          typeof settingsRaw.repositoryUrl === "string" ? settingsRaw.repositoryUrl : "",
+          typeof settingsRaw.repositoryUrl === "string" && settingsRaw.repositoryUrl
+            ? settingsRaw.repositoryUrl
+            : "https://github.com/urstrulyg1/G1Wiggle",
         wakeLockEnabled: bool(settingsRaw.wakeLockEnabled, true),
         soundEnabled: bool(settingsRaw.soundEnabled, true),
         soundVolume: num(settingsRaw.soundVolume, 35, 0, 100),
