@@ -11,6 +11,7 @@ node_modules/
 /release
 /dist-electron
 /.icon-tmp
+/.icon-gen-tmp
 
 # Misc
 .DS_Store

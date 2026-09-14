@@ -195,7 +195,7 @@ echo ""
 # 0. Clean if requested
 if [ "$CLEAN_FIRST" = true ]; then
   echo -e "${CYAN}🧹 [1/5] Cleaning previous build outputs...${NC}"
-  rm -rf dist release .icon-tmp
+  rm -rf dist release .icon-tmp .icon-gen-tmp
   echo -e "   ✓ Cleaned dist/ and release/"
 else
   echo -e "${CYAN}⏩ [1/5] Preserving build caches (use --clean to wipe)...${NC}"
