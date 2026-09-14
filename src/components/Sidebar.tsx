@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { LogoLockup } from "./Logo";
 import { TrayMenu } from "./TrayMenu";
+import { isMac } from "../platform/detect";
 import { APP_VERSION, useStore } from "../store/useStore";
 import { cn } from "../utils/cn";
 
@@ -31,10 +32,28 @@ export function Sidebar({
   onNavigate: (p: PageId) => void;
 }) {
   const status = useStore((s) => s.runtime.status);
+  const isMacOS = isMac();
+
   return (
     <aside className="flex h-full w-[204px] shrink-0 flex-col border-r border-border bg-surface xl:w-[236px]">
-      <div className="px-4 pb-5 pt-5">
-        <LogoLockup />
+      {/* macOS traffic light clearance & window drag region */}
+      <div
+        className={cn("px-4 pb-5", isMacOS ? "pt-[52px]" : "pt-5")}
+        style={{ WebkitAppRegion: isMacOS ? "drag" : undefined } as React.CSSProperties}
+      >
+        <div
+          style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
+          onClick={() => onNavigate("dashboard")}
+          className="cursor-pointer transition-opacity hover:opacity-90"
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") onNavigate("dashboard");
+          }}
+          aria-label="G1Wiggle Dashboard"
+        >
+          <LogoLockup />
+        </div>
       </div>
       <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-3">
         {NAV.map((item) => {

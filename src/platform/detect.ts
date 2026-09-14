@@ -93,3 +93,16 @@ export function detectEnvironment(): EnvironmentInfo {
 
   return env;
 }
+
+export function isMac(): boolean {
+  if (typeof window !== "undefined") {
+    const api = (window as unknown as { electronAPI?: { platform?: string } }).electronAPI;
+    if (api?.platform) return api.platform === "darwin";
+  }
+  if (typeof navigator !== "undefined") {
+    const ua = navigator.userAgent || "";
+    const platform = navigator.platform || "";
+    return /Mac/i.test(platform) || /Mac OS X/i.test(ua);
+  }
+  return false;
+}

@@ -5,6 +5,7 @@ import { formatClock, formatCountdown, formatHMS } from "../lib/time";
 import { MODE_META } from "../lib/types";
 import { useStore } from "../store/useStore";
 import { cn } from "../utils/cn";
+import { isMac } from "../platform/detect";
 
 export function AmbientModal() {
   const open = useStore((s) => s.ambientOpen);
@@ -56,7 +57,7 @@ export function AmbientModal() {
         className="fixed inset-0 z-50 flex flex-col justify-between bg-black/95 p-6 text-white backdrop-blur-xl md:p-12 select-none"
       >
         {/* top navigation bar */}
-        <div className="flex items-center justify-between">
+        <div className={cn("flex items-center justify-between", isMac() && "pl-16 pt-1")}>
           <div className="flex items-center gap-3">
             <span
               className={cn(
