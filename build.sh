@@ -192,83 +192,88 @@ fi
 echo -e " ⚙️  ${DIM}Node Environment:${NC}  $(node -v)"
 echo ""
 
-# 0. Clean if requested
+# 0. Clean previous release output to ensure only the target installer is created
+echo -e "${CYAN}🧹 [1/6] Cleaning previous release directory...${NC}"
+rm -rf release .icon-tmp .icon-gen-tmp
 if [ "$CLEAN_FIRST" = true ]; then
-  echo -e "${CYAN}🧹 [1/5] Cleaning previous build outputs...${NC}"
-  rm -rf dist release .icon-tmp .icon-gen-tmp
+  rm -rf dist
   echo -e "   ✓ Cleaned dist/ and release/"
 else
-  echo -e "${CYAN}⏩ [1/5] Preserving build caches (use --clean to wipe)...${NC}"
+  echo -e "   ✓ Cleaned release/"
 fi
 
 # 1. Generate multi-resolution icons (.icns, .ico, .png)
-echo -e "${CYAN}🎨 [2/5] Generating branded desktop icons...${NC}"
+echo -e "${CYAN}🎨 [2/6] Generating branded desktop icons...${NC}"
 node scripts/generate-icons.mjs
 
 # 2. Run automated test suite
 if [ "$SKIP_TESTS" = false ]; then
-  echo -e "${CYAN}🧪 [3/5] Validating test suite with Vitest...${NC}"
+  echo -e "${CYAN}🧪 [3/6] Validating test suite with Vitest...${NC}"
   npm run test
 else
-  echo -e "${YELLOW}⏩ [3/5] Skipping test suite (--skip-tests active)${NC}"
+  echo -e "${YELLOW}⏩ [3/6] Skipping test suite (--skip-tests active)${NC}"
 fi
 
 # 3. Build web production bundle (Vite singlefile)
-echo -e "${CYAN}⚡ [4/5] Compiling production web bundle (Vite)...${NC}"
+echo -e "${CYAN}⚡ [4/6] Compiling production web bundle (Vite)...${NC}"
 npm run build
 
 # 4. Package desktop releases via electron-builder
-echo -e "${CYAN}📦 [5/5] Packaging desktop binaries with electron-builder...${NC}"
+echo -e "${CYAN}📦 [5/6] Packaging desktop binaries with electron-builder...${NC}"
 
 case "$TARGET" in
   mac)
     if [ "$BUILD_ALL_ARCH" = true ]; then
       echo -e "   → Packaging macOS DMGs for all architectures (Apple Silicon arm64 + Intel x64)..."
-      npx electron-builder --mac --arm64 --x64 --config electron-builder.json
+      npx electron-builder --mac --arm64 --x64 -p never --config electron-builder.json
     else
       echo -e "   → Packaging macOS DMG specifically for detected hardware (${TARGET_ARCH})..."
-      npx electron-builder --mac "--${TARGET_ARCH}" --config electron-builder.json
+      npx electron-builder --mac "--${TARGET_ARCH}" -p never --config electron-builder.json
     fi
     ;;
   win)
     if [ "$BUILD_ALL_ARCH" = true ]; then
       echo -e "   → Packaging Windows EXEs for all architectures (64-bit x64 + 32-bit ia32/x86)..."
-      npx electron-builder --win --x64 --ia32 --config electron-builder.json
+      npx electron-builder --win --x64 --ia32 -p never --config electron-builder.json
     else
       echo -e "   → Packaging Windows EXE specifically for detected hardware (${TARGET_ARCH})..."
-      npx electron-builder --win "--${TARGET_ARCH}" --config electron-builder.json
+      npx electron-builder --win "--${TARGET_ARCH}" -p never --config electron-builder.json
     fi
     ;;
   linux)
     if [ "$BUILD_ALL_ARCH" = true ]; then
       echo -e "   → Packaging Linux packages for all architectures (x64 + arm64)..."
-      npx electron-builder --linux --x64 --arm64 --config electron-builder.json
+      npx electron-builder --linux --x64 --arm64 -p never --config electron-builder.json
     else
       echo -e "   → Packaging Linux package specifically for detected hardware (${TARGET_ARCH})..."
-      npx electron-builder --linux "--${TARGET_ARCH}" --config electron-builder.json
+      npx electron-builder --linux "--${TARGET_ARCH}" -p never --config electron-builder.json
     fi
     ;;
   all)
     echo -e "   → Cross-compiling macOS DMGs (arm64 + x64)..."
-    npx electron-builder --mac --arm64 --x64 --config electron-builder.json
+    npx electron-builder --mac --arm64 --x64 -p never --config electron-builder.json
     echo -e "   → Cross-compiling Windows EXEs (x64 + ia32/x86)..."
-    npx electron-builder --win --x64 --ia32 --config electron-builder.json
+    npx electron-builder --win --x64 --ia32 -p never --config electron-builder.json
     echo -e "   → Cross-compiling Linux packages (x64 + arm64)..."
-    npx electron-builder --linux --x64 --arm64 --config electron-builder.json
+    npx electron-builder --linux --x64 --arm64 -p never --config electron-builder.json
     ;;
 esac
+
+# 5. Purge all intermediate updater blockmaps, metadata manifests, and staging folders
+echo -e "${CYAN}🧹 [6/6] Purging intermediate metadata and staging folders...${NC}"
+rm -rf release/*.blockmap release/*.yml release/*.yaml release/mac-* release/win-* release/linux-* release/*-unpacked release/*.zip
 
 echo ""
 echo -e "${GREEN}${BOLD}======================================================${NC}"
 echo -e "${GREEN}${BOLD}       Packaging Completed Successfully!             ${NC}"
 echo -e "${GREEN}${BOLD}======================================================${NC}"
-echo -e "${BOLD}Generated Native Hardware Artifacts in release/:${NC}"
+echo -e "${BOLD}Generated Native Hardware Installer in release/:${NC}"
 echo ""
 
 if [ -d "release" ]; then
-  ls -lh release/*.dmg release/*.exe release/*.AppImage release/*.deb release/*.zip 2>/dev/null || ls -lh release/
+  ls -lh release/*.dmg release/*.exe release/*.AppImage release/*.deb 2>/dev/null || ls -lh release/
 fi
 
 echo ""
-echo -e "${CYAN}Your native desktop package is ready in:${NC} ${BOLD}${SCRIPT_DIR}/release/${NC}"
+echo -e "${CYAN}Your native desktop installer is ready in:${NC} ${BOLD}${SCRIPT_DIR}/release/${NC}"
 echo ""

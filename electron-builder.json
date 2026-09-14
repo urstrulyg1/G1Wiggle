@@ -3,6 +3,7 @@
   "appId": "com.urstrulyg1.g1wiggle",
   "productName": "G1Wiggle",
   "copyright": "Copyright © 2025-2026 urstrulyg1",
+  "publish": null,
   "directories": {
     "output": "release",
     "buildResources": "build"
@@ -24,9 +25,6 @@
     "target": [
       {
         "target": "dmg"
-      },
-      {
-        "target": "zip"
       }
     ]
   },
@@ -34,6 +32,7 @@
     "title": "${productName} Installer",
     "icon": "build/icon.icns",
     "background": "build/background.tiff",
+    "writeUpdateInfo": false,
     "contents": [
       {
         "x": 130,
@@ -56,15 +55,13 @@
     "target": [
       {
         "target": "nsis"
-      },
-      {
-        "target": "portable"
       }
     ]
   },
   "nsis": {
     "oneClick": false,
     "perMachine": false,
+    "differentialPackage": false,
     "allowToChangeInstallationDirectory": true,
     "deleteAppDataOnUninstall": false,
     "createDesktopShortcut": true,
@@ -77,9 +74,6 @@
     "installerSidebar": "build/installerSidebar.bmp",
     "uninstallerSidebar": "build/uninstallerSidebar.bmp"
   },
-  "portable": {
-    "artifactName": "${productName}-Portable-${version}-${arch}.${ext}"
-  },
   "linux": {
     "icon": "build/icons",
     "category": "Utility",
@@ -87,9 +81,6 @@
     "target": [
       {
         "target": "AppImage"
-      },
-      {
-        "target": "deb"
       }
     ],
     "artifactName": "${productName}-${version}-${arch}.${ext}"
