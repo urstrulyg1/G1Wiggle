@@ -64,7 +64,7 @@ const icon4kHtml = `<!DOCTYPE html>
 </body>
 </html>`;
 
-// 2. 4K DMG Background Template (2160x1520 — 4x of 540x380)
+// 2. 4K DMG Background Template (2720x1800 — 4x of 680x450)
 const dmgBg4kHtml = `<!DOCTYPE html>
 <html>
 <head>
@@ -72,9 +72,9 @@ const dmgBg4kHtml = `<!DOCTYPE html>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
-    width: 2160px;
-    height: 1520px;
-    background: radial-gradient(circle at 50% 18%, rgba(163, 230, 53, 0.18) 0%, rgba(18, 22, 16, 0.98) 55%, #080B07 100%);
+    width: 2720px;
+    height: 1800px;
+    background: radial-gradient(circle at 50% 20%, rgba(163, 230, 53, 0.18) 0%, rgba(18, 22, 16, 0.98) 55%, #080B07 100%);
     font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', 'Segoe UI', Roboto, sans-serif;
     color: #ECEFE3;
     overflow: hidden;
@@ -86,7 +86,7 @@ const dmgBg4kHtml = `<!DOCTYPE html>
   .border-glow {
     position: absolute;
     inset: 0;
-    border: 4px solid rgba(255, 255, 255, 0.09);
+    border: 4px solid rgba(255, 255, 255, 0.08);
     pointer-events: none;
   }
 
@@ -101,7 +101,7 @@ const dmgBg4kHtml = `<!DOCTYPE html>
 
   .header {
     position: absolute;
-    top: 92px;
+    top: 110px;
     left: 0;
     right: 0;
     display: flex;
@@ -110,9 +110,9 @@ const dmgBg4kHtml = `<!DOCTYPE html>
   }
 
   .logo-box {
-    width: 168px;
-    height: 168px;
-    border-radius: 40px;
+    width: 180px;
+    height: 180px;
+    border-radius: 44px;
     background: linear-gradient(135deg, #1C2317 0%, #0D110B 100%);
     border: 3px solid rgba(163, 230, 53, 0.45);
     box-shadow: 0 24px 72px rgba(0, 0, 0, 0.65), 0 0 48px rgba(163, 230, 53, 0.3);
@@ -123,12 +123,12 @@ const dmgBg4kHtml = `<!DOCTYPE html>
   }
 
   .logo-box svg {
-    width: 120px;
-    height: 120px;
+    width: 130px;
+    height: 130px;
   }
 
   .title {
-    font-size: 88px;
+    font-size: 96px;
     font-weight: 800;
     letter-spacing: -0.03em;
     color: #FFFFFF;
@@ -140,41 +140,41 @@ const dmgBg4kHtml = `<!DOCTYPE html>
   }
 
   .subtitle {
-    margin-top: 12px;
-    font-size: 40px;
+    margin-top: 14px;
+    font-size: 42px;
     font-weight: 500;
     color: #B4BCA7;
     letter-spacing: -0.015em;
   }
 
-  /* Pedestals centered at (520, 880) and (1640, 880) in 4K — matching 130 and 410 at 220 */
+  /* Pedestals centered at (680, 1000) and (2040, 1000) in 4K — matching 170 and 510 at 250 in 1x */
   .pedestal {
     position: absolute;
-    width: 352px;
-    height: 352px;
-    border-radius: 72px;
-    top: 880px;
+    width: 400px;
+    height: 400px;
+    border-radius: 84px;
+    top: 1000px;
     transform: translate(-50%, -50%);
   }
 
   .pedestal-left {
-    left: 520px;
+    left: 680px;
     border: 4px dashed rgba(163, 230, 53, 0.45);
     background: radial-gradient(circle, rgba(163, 230, 53, 0.12) 0%, transparent 70%);
   }
 
   .pedestal-right {
-    left: 1640px;
+    left: 2040px;
     border: 4px dashed rgba(255, 255, 255, 0.28);
     background: radial-gradient(circle, rgba(255, 255, 255, 0.08) 0%, transparent 70%);
   }
 
   .arrow-container {
     position: absolute;
-    left: 780px;
-    top: 810px;
-    width: 600px;
-    height: 140px;
+    left: 1000px;
+    top: 920px;
+    width: 720px;
+    height: 160px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -183,14 +183,14 @@ const dmgBg4kHtml = `<!DOCTYPE html>
 
   .footer-pill {
     position: absolute;
-    bottom: 92px;
+    bottom: 110px;
     left: 50%;
     transform: translateX(-50%);
     background: rgba(26, 32, 23, 0.9);
     border: 2px solid rgba(163, 230, 53, 0.35);
     backdrop-filter: blur(24px);
     border-radius: 9999px;
-    padding: 24px 64px;
+    padding: 24px 68px;
     display: flex;
     align-items: center;
     gap: 24px;
@@ -198,7 +198,7 @@ const dmgBg4kHtml = `<!DOCTYPE html>
   }
 
   .footer-text {
-    font-size: 38px;
+    font-size: 40px;
     font-weight: 600;
     color: #E2E8DC;
     letter-spacing: -0.01em;
@@ -207,9 +207,9 @@ const dmgBg4kHtml = `<!DOCTYPE html>
   .footer-badge {
     background: #A3E635;
     color: #0E1408;
-    font-size: 26px;
+    font-size: 28px;
     font-weight: 800;
-    padding: 6px 20px;
+    padding: 6px 22px;
     border-radius: 9999px;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -232,7 +232,7 @@ const dmgBg4kHtml = `<!DOCTYPE html>
   <div class="pedestal pedestal-right"></div>
 
   <div class="arrow-container">
-    <svg width="600" height="140" viewBox="0 0 600 140" fill="none">
+    <svg width="720" height="160" viewBox="0 0 720 160" fill="none">
       <defs>
         <linearGradient id="arrow-grad-4k" x1="0" y1="0" x2="1" y2="0">
           <stop offset="0%" stop-color="#84CC16" stop-opacity="0.4"/>
@@ -247,8 +247,8 @@ const dmgBg4kHtml = `<!DOCTYPE html>
           </feMerge>
         </filter>
       </defs>
-      <path d="M 40 70 C 120 30, 200 110, 300 70 S 460 50, 500 70" stroke="url(#arrow-grad-4k)" stroke-width="12" stroke-linecap="round" fill="none" filter="url(#arrow-glow-4k)"/>
-      <path d="M 490 44 L 550 70 L 490 96 Z" fill="#BEF264" filter="url(#arrow-glow-4k)"/>
+      <path d="M 30 80 C 160 30, 290 130, 440 80 S 580 50, 620 80" stroke="url(#arrow-grad-4k)" stroke-width="14" stroke-linecap="round" fill="none" filter="url(#arrow-glow-4k)"/>
+      <path d="M 610 52 L 670 80 L 610 108 Z" fill="#BEF264" filter="url(#arrow-glow-4k)"/>
     </svg>
   </div>
 
@@ -441,8 +441,8 @@ app.whenReady().then(async () => {
   let img = await win.capturePage();
   fs.writeFileSync(path.join(tmp, 'master-2048.png'), img.toPNG());
 
-  // 2. Render 4K DMG Background (2160x1520)
-  win.setContentSize(2160, 1520);
+  // 2. Render 4K DMG Background (2720x1800)
+  win.setContentSize(2720, 1800);
   await win.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(dmgBgHtml));
   await new Promise(r => setTimeout(r, 350));
   img = await win.capturePage();
@@ -524,15 +524,15 @@ ico_sizes = [(16, 16), (24, 24), (32, 32), (48, 48), (64, 64), (128, 128), (256,
 ico_out = os.path.join(build, "icon.ico")
 master_1024.save(ico_out, format="ICO", sizes=ico_sizes)
 
-# 5. 4K DMG Background (540x380 1x and 1080x760 2x Retina TIFF supersampled from 2160x1520)
+# 5. 4K DMG Background (680x450 1x and 1360x900 2x Retina TIFF supersampled from 2720x1800)
 dmg_4k = Image.open(os.path.join(tmp, "dmg-bg-4k.png")).convert("RGB")
 dmg_4k.save(os.path.join(build, "dmg-background-4k.png"))
 
-dmg_2x = dmg_4k.resize((1080, 760), Image.Resampling.LANCZOS)
+dmg_2x = dmg_4k.resize((1360, 900), Image.Resampling.LANCZOS)
 dmg_2x_path = os.path.join(build, "dmg-background@2x.png")
 dmg_2x.save(dmg_2x_path)
 
-dmg_1x = dmg_4k.resize((540, 380), Image.Resampling.LANCZOS)
+dmg_1x = dmg_4k.resize((680, 450), Image.Resampling.LANCZOS)
 dmg_1x_path = os.path.join(build, "dmg-background.png")
 dmg_1x.save(dmg_1x_path)
 

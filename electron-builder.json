@@ -35,19 +35,19 @@
     "writeUpdateInfo": false,
     "contents": [
       {
-        "x": 130,
-        "y": 220
+        "x": 170,
+        "y": 250
       },
       {
-        "x": 410,
-        "y": 220,
+        "x": 510,
+        "y": 250,
         "type": "link",
         "path": "/Applications"
       }
     ],
     "window": {
-      "width": 540,
-      "height": 380
+      "width": 680,
+      "height": 450
     }
   },
   "win": {
