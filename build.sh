@@ -253,6 +253,8 @@ case "$TARGET" in
     npx electron-builder --mac --arm64 --x64 --config electron-builder.json
     echo -e "   → Cross-compiling Windows EXEs (x64 + ia32/x86)..."
     npx electron-builder --win --x64 --ia32 --config electron-builder.json
+    echo -e "   → Cross-compiling Linux packages (x64 + arm64)..."
+    npx electron-builder --linux --x64 --arm64 --config electron-builder.json
     ;;
 esac
 

@@ -124,7 +124,7 @@ npm run build:desktop
 #### Optional Manual Overrides
 
 ```bash
-# Cross-compile all targets
+# Cross-compile all targets (macOS, Windows, and Linux)
 ./build.sh --all
 
 # Force macOS Disk Images (Apple Silicon arm64 & Intel x64)
@@ -132,6 +132,9 @@ npm run build:desktop
 
 # Force Windows Installers & Portable Executables (x64 & x86/ia32)
 ./build.sh --win
+
+# Force Linux Packages (AppImage & deb)
+./build.sh --linux
 
 # Clean build caches before packaging
 ./build.sh --clean
