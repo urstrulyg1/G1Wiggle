@@ -94,7 +94,9 @@ function createMainWindow() {
   mainWindow.webContents.on("will-navigate", (event, url) => {
     if (!url.startsWith("file://") && !url.startsWith("http://localhost")) {
       event.preventDefault();
-      shell.openExternal(url);
+      if (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("mailto:")) {
+        shell.openExternal(url);
+      }
     }
   });
 
