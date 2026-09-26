@@ -56,7 +56,7 @@ jobs:
         include:
           - os: mac
             arch: x64
-            runner: macos-latest
+            runner: macos-15-intel
             command: npx electron-builder --mac --x64 -p never --config electron-builder.json
             artifact: G1Wiggle-*-x64.dmg
           - os: mac
@@ -81,7 +81,7 @@ jobs:
             artifact: G1Wiggle-Setup-*-ia32.exe
           - os: win
             arch: arm64
-            runner: windows-latest
+            runner: windows-11-arm
             command: npx electron-builder --win --arm64 -p never --config electron-builder.json
             artifact: G1Wiggle-Setup-*-arm64.exe
           - os: linux
@@ -124,6 +124,35 @@ jobs:
         run: |
           rm -rf release
           ${{ matrix.command }}
+      - name: Validate packaged application
+        if: ${{ success() }}
+        shell: bash
+        run: |
+          shopt -s nullglob
+          files=(release/${{ matrix.artifact }})
+          test ${#files[@]} -eq 1
+          artifact="${files[0]}"
+          case "${{ matrix.os }}:${{ matrix.arch }}" in
+            linux:*)
+              chmod +x "$artifact"
+              "$artifact" --appimage-version
+              "$artifact" --appimage-extract-and-run --version
+              ;;
+            mac:x64|mac:arm64|mac:universal)
+              mount_point="$RUNNER_TEMP/g1wiggle-dmg"
+              mkdir -p "$mount_point"
+              hdiutil attach "$artifact" -mountpoint "$mount_point" -nobrowse -quiet
+              test -d "$mount_point/G1Wiggle.app"
+              test -x "$mount_point/G1Wiggle.app/Contents/MacOS/G1Wiggle"
+              "$mount_point/G1Wiggle.app/Contents/MacOS/G1Wiggle" --version
+              hdiutil detach "$mount_point" -quiet
+              ;;
+            win:*)
+              powershell -NoProfile -NonInteractive -Command "$ErrorActionPreference='Stop'; $target=Join-Path $env:RUNNER_TEMP 'G1Wiggle-install'; Remove-Item -Recurse -Force $target -ErrorAction SilentlyContinue; Start-Process -FilePath (Resolve-Path '$artifact') -ArgumentList '/S',('/D='+$target) -Wait; $exe=Join-Path $target 'G1Wiggle.exe'; if (!(Test-Path $exe)) { throw 'Installed G1Wiggle.exe not found' }; & $exe --version"
+              ;;
+            *) echo "Unsupported target"; exit 1 ;;
+          esac
+
       - name: Purge intermediate files
         shell: bash
         run: |
@@ -134,7 +163,7 @@ jobs:
         run: |
           shopt -s nullglob
           files=(release/${{ matrix.artifact }})
-          if [ ${#files[@]} -eq 0 ]; then
+          if [ ${#files[@]} -ne 1 ]; then
             echo "Expected artifact not found: ${{ matrix.artifact }}"
             ls -la release || true
             exit 1
@@ -171,4 +200,5 @@ jobs:
             echo "| Linux | x64 | G1Wiggle-*-x64.AppImage | ubuntu-latest |"
             echo "| Linux | arm64 | G1Wiggle-*-arm64.AppImage | ubuntu-24.04-arm |"
             echo "| Linux | ia32 | G1Wiggle-*-ia32.AppImage | ubuntu-latest |"
+            echo "| Linux | armv7l | G1Wiggle-*-armv7l.AppImage | ubuntu-latest |"
           } >> "$GITHUB_STEP_SUMMARY"
