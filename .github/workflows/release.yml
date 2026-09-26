@@ -14,7 +14,6 @@ on:
 
 permissions:
   contents: write
-  actions: read
 
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -75,12 +74,12 @@ jobs:
         with:
           name: G1Wiggle-release-macos
           path: release/*
-          if-no-files-found: warn
+          if-no-files-found: error
           retention-days: 90
 
   release-windows:
     name: Release Windows
-    needs: test
+    needs: release-macos
     runs-on: windows-latest
     steps:
       - name: Checkout
@@ -115,9 +114,10 @@ jobs:
 
   release-linux:
     name: Release Linux
-    needs: test
+    needs: release-windows
     strategy:
-      fail-fast: false
+      fail-fast: true
+      max-parallel: 1
       matrix:
         include:
           - runner: ubuntu-latest
@@ -126,6 +126,12 @@ jobs:
           - runner: ubuntu-24.04-arm
             arch: arm64
             command: npx electron-builder --linux --arm64 -p never --config electron-builder.json
+          - runner: ubuntu-latest
+            arch: ia32
+            command: npx electron-builder --linux --ia32 -p never --config electron-builder.json
+          - runner: ubuntu-latest
+            arch: armv7l
+            command: npx electron-builder --linux --armv7l -p never --config electron-builder.json
     runs-on: ${{ matrix.runner }}
     steps:
       - name: Checkout
@@ -168,7 +174,7 @@ jobs:
       - name: Show release artifacts
         run: find release-artifacts -type f -maxdepth 3 -print
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
           files: |

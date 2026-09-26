@@ -8,7 +8,6 @@ on:
 
 permissions:
   contents: read
-  actions: read
 
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -41,17 +40,22 @@ jobs:
           grep -F -- '--ia32' build.sh
           grep -F -- '--all-arch' build.sh
       - name: Validate configuration
-        run: node -e "const c=require('./electron-builder.json'); if (c.publish !== null) process.exit(1); if (!c.mac.artifactName.includes('${arch}')) process.exit(1); if (!c.nsis.artifactName.includes('${arch}')) process.exit(1); if (!c.linux.artifactName.includes('${arch}')) process.exit(1)"
+        run: node -e 'const c=require("./electron-builder.json"); if (c.publish !== null) process.exit(1); if (!c.mac.artifactName.includes("${arch}")) process.exit(1); if (!c.nsis.artifactName.includes("${arch}")) process.exit(1); if (!c.linux.artifactName.includes("${arch}")) process.exit(1)'
       - name: Run pipeline validator
         run: npm run pipeline:validate:verbose
       - name: Run all tests
         run: npm run test:all
+      - name: Build web application
+        run: npm run build
+      - name: Validate Electron Builder CLI
+        run: npx electron-builder --help
 
   build-matrix:
     name: CI Matrix ${{ matrix.os }} / ${{ matrix.arch }}
     needs: validate-pipeline
     strategy:
-      fail-fast: false
+      fail-fast: true
+      max-parallel: 1
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
         arch: [x64, arm64, ia32, universal]
@@ -72,7 +76,6 @@ jobs:
           - os: macos-latest
             arch: universal
     runs-on: ${{ matrix.os }}
-    continue-on-error: ${{ matrix.arch == 'ia32' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4

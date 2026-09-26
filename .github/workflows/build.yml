@@ -16,7 +16,6 @@ on:
 
 permissions:
   contents: read
-  actions: read
 
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -51,7 +50,8 @@ jobs:
     name: Build ${{ matrix.os }} / ${{ matrix.arch }}
     needs: test
     strategy:
-      fail-fast: false
+      fail-fast: true
+      max-parallel: 1
       matrix:
         include:
           - os: mac
@@ -99,8 +99,12 @@ jobs:
             runner: ubuntu-latest
             command: npx electron-builder --linux --ia32 -p never --config electron-builder.json
             artifact: G1Wiggle-*-ia32.AppImage
+          - os: linux
+            arch: armv7l
+            runner: ubuntu-latest
+            command: npx electron-builder --linux --armv7l -p never --config electron-builder.json
+            artifact: G1Wiggle-*-armv7l.AppImage
     runs-on: ${{ matrix.runner }}
-    continue-on-error: ${{ matrix.os == 'linux' && matrix.arch == 'ia32' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -141,99 +145,13 @@ jobs:
         with:
           name: G1Wiggle-${{ matrix.os }}-${{ matrix.arch }}
           path: release/${{ matrix.artifact }}
-          if-no-files-found: warn
-          retention-days: 30
-
-  build-all-arch-per-os:
-    name: Build All Arch Per OS
-    needs: test
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: mac
-            runner: macos-latest
-            command: npx electron-builder --mac --arm64 --x64 -p never --config electron-builder.json
-          - os: win
-            runner: windows-latest
-            command: npx electron-builder --win --x64 --ia32 -p never --config electron-builder.json
-          - os: linux
-            runner: ubuntu-latest
-            command: npx electron-builder --linux --x64 --arm64 -p never --config electron-builder.json
-    runs-on: ${{ matrix.runner }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup Node.js 20
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-      - name: Install dependencies
-        run: npm ci
-      - name: Generate icons
-        run: npm run icons
-      - name: Build web application
-        run: npm run build
-      - name: Build all architectures
-        shell: bash
-        run: |
-          rm -rf release
-          ${{ matrix.command }}
-      - name: Purge intermediates
-        shell: bash
-        run: |
-          rm -f release/*.blockmap release/*.yml release/*.yaml release/*.zip || true
-          rm -rf release/*-unpacked || true
-      - name: Upload OS bundle
-        uses: actions/upload-artifact@v4
-        with:
-          name: G1Wiggle-all-${{ matrix.os }}
-          path: release/*
-          if-no-files-found: warn
-          retention-days: 30
-
-  build-all:
-    name: Build All OS & Arch
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup Node.js 20
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-      - name: Install dependencies
-        run: npm ci
-      - name: Generate icons
-        run: npm run icons
-      - name: Build web application
-        run: npm run build
-      - name: Cross-build macOS
-        run: npx electron-builder --mac --arm64 --x64 -p never --config electron-builder.json
-      - name: Cross-build Windows
-        run: npx electron-builder --win --x64 --ia32 -p never --config electron-builder.json
-      - name: Cross-build Linux
-        run: npx electron-builder --linux --x64 --arm64 -p never --config electron-builder.json
-      - name: Purge intermediates
-        shell: bash
-        run: |
-          rm -f release/*.blockmap release/*.yml release/*.yaml release/*.zip || true
-          rm -rf release/*-unpacked release/mac-* release/win-* release/linux-* || true
-      - name: Upload combined release directory
-        uses: actions/upload-artifact@v4
-        with:
-          name: G1Wiggle-all-os-arch
-          path: release/*
-          if-no-files-found: warn
+          if-no-files-found: error
           retention-days: 30
 
   summary:
     name: Build Summary
-    needs: [build-matrix, build-all-arch-per-os, build-all]
-    if: always()
+    needs: [build-matrix]
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     steps:
       - name: Write summary
