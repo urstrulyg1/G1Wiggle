@@ -98,27 +98,24 @@ describe("strict-workflows: build.yml strict validation", () => {
     expect(content).toContain("G1Wiggle-*-arm64.AppImage");
   });
 
-  it("has build-all-arch-per-os job building all arch per OS in one job", () => {
-    expect(content).toContain("build-all-arch-per-os");
-    expect(content).toContain("--arm64 --x64");
-    expect(content).toContain("--x64 --ia32");
-    expect(content).toContain("--x64 --arm64");
+  it("has a single strict build matrix covering every target", () => {
+    expect(content).toContain("build-matrix");
+    expect(content).toContain("armv7l");
+    expect(content).toContain("max-parallel: 1");
   });
 
-  it("has build-all job cross-compiling mac, win, linux", () => {
-    expect(content).toContain("build-all:");
-    expect(content).toContain("Build All OS & Arch");
-    expect(content).toContain("--mac --arm64 --x64");
-    expect(content).toContain("--win --x64 --ia32");
-    expect(content).toContain("--linux --x64 --arm64");
+  it("does not use unsafe cross-platform build aggregation", () => {
+    expect(content).not.toContain("build-all:");
+    expect(content).not.toContain("Build All OS & Arch");
   });
 
-  it("has strategy fail-fast false for matrix", () => {
-    expect(content).toContain("fail-fast: false");
+  it("has strict fail-fast and serialized matrix execution", () => {
+    expect(content).toContain("fail-fast: true");
+    expect(content).toContain("max-parallel: 1");
   });
 
-  it("has continue-on-error for legacy ia32 linux", () => {
-    expect(content).toContain("continue-on-error");
+  it("does not silently ignore build failures", () => {
+    expect(content).not.toContain("continue-on-error:");
     expect(content).toContain("ia32");
   });
 
@@ -305,9 +302,9 @@ describe("strict-workflows: security and best practices", () => {
     }
   });
 
-  it("workflows have if-no-files-found warn to avoid failing on missing artifacts", () => {
+  it("build workflow fails when artifacts are missing", () => {
     const build = readWorkflow("build.yml");
-    expect(build).toContain("if-no-files-found: warn");
+    expect(build).toContain("if-no-files-found: error");
   });
 
   it("workflows have retention-days set (30 for build, 90 for release)", () => {
