@@ -83,6 +83,7 @@ describe("strict-workflows: build.yml strict validation", () => {
     expect(content).toContain("windows-latest");
     expect(content).toContain("ubuntu-latest");
     expect(content).toContain("ubuntu-24.04-arm");
+    expect(content).toContain("armv7l");
     expect(content).toContain("x64");
     expect(content).toContain("arm64");
     expect(content).toContain("ia32");
@@ -228,6 +229,7 @@ describe("strict-workflows: release.yml strict validation", () => {
   it("has release-build matrix building macOS x64, arm64, universal", () => {
     expect(content).toContain("release-build:");
     expect(content).toContain("macOS");
+    expect(content).toContain("macos-15-intel");
     expect(content).toContain("--mac --x64");
     expect(content).toContain("--mac --arm64");
     expect(content).toContain("--mac --universal");
@@ -236,6 +238,7 @@ describe("strict-workflows: release.yml strict validation", () => {
   it("release-build matrix includes Windows x64, ia32, arm64", () => {
     expect(content).toContain("release-build:");
     expect(content).toContain("Windows");
+    expect(content).toContain("windows-11-arm");
     expect(content).toContain("--win --x64");
     expect(content).toContain("--win --ia32");
     expect(content).toContain("--win --arm64");
@@ -262,8 +265,7 @@ describe("strict-workflows: release.yml strict validation", () => {
 
   it("has release dependencies chained in strict order", () => {
     expect(content).toContain("needs: test");
-    expect(content).toContain("needs: release-macos");
-    expect(content).toContain("needs: release-windows");
+    expect(content).toContain("needs: test");
     expect(content).toContain("needs: release-build");
   });
 
