@@ -1,0 +1,104 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master, "arena/**"]
+  pull_request:
+    branches: [main, master]
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  CSC_IDENTITY_AUTO_DISCOVERY: false
+
+jobs:
+  validate-pipeline:
+    name: Validate Pipeline and Build Scripts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Generate icons
+        run: npm run icons
+      - name: Validate build.sh
+        run: |
+          test -x build.sh || chmod +x build.sh
+          grep -F -- '--mac' build.sh
+          grep -F -- '--win' build.sh
+          grep -F -- '--linux' build.sh
+          grep -F -- '--x64' build.sh
+          grep -F -- '--arm64' build.sh
+          grep -F -- '--ia32' build.sh
+          grep -F -- '--all-arch' build.sh
+      - name: Validate configuration
+        run: node -e "const c=require('./electron-builder.json'); if (c.publish !== null) process.exit(1); if (!c.mac.artifactName.includes('${arch}')) process.exit(1); if (!c.nsis.artifactName.includes('${arch}')) process.exit(1); if (!c.linux.artifactName.includes('${arch}')) process.exit(1)"
+      - name: Run pipeline validator
+        run: npm run pipeline:validate:verbose
+      - name: Run all tests
+        run: npm run test:all
+
+  build-matrix:
+    name: CI Matrix ${{ matrix.os }} / ${{ matrix.arch }}
+    needs: validate-pipeline
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        arch: [x64, arm64, ia32, universal]
+        exclude:
+          - os: ubuntu-latest
+            arch: universal
+          - os: ubuntu-latest
+            arch: ia32
+          - os: windows-latest
+            arch: universal
+          - os: macos-latest
+            arch: ia32
+        include:
+          - os: ubuntu-24.04-arm
+            arch: arm64
+          - os: windows-latest
+            arch: ia32
+          - os: macos-latest
+            arch: universal
+    runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.arch == 'ia32' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Generate icons
+        run: npm run icons
+      - name: Build web application
+        run: npm run build
+      - name: Validate Electron Builder CLI
+        run: npx electron-builder --help
+      - name: Validate architecture target
+        shell: bash
+        run: |
+          case "${{ matrix.os }}:${{ matrix.arch }}" in
+            macos-latest:x64) npx electron-builder --mac --x64 -p never --config electron-builder.json --dir ;;
+            macos-latest:arm64) npx electron-builder --mac --arm64 -p never --config electron-builder.json --dir ;;
+            macos-latest:universal) npx electron-builder --mac --universal -p never --config electron-builder.json --dir ;;
+            windows-latest:x64) npx electron-builder --win --x64 -p never --config electron-builder.json --dir ;;
+            windows-latest:ia32) npx electron-builder --win --ia32 -p never --config electron-builder.json --dir ;;
+            ubuntu-latest:x64) npx electron-builder --linux --x64 -p never --config electron-builder.json --dir ;;
+            ubuntu-24.04-arm:arm64) npx electron-builder --linux --arm64 -p never --config electron-builder.json --dir ;;
+            *) echo "No strict target mapping for this matrix entry"; exit 1 ;;
+          esac
