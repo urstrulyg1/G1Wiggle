@@ -1,0 +1,256 @@
+name: All Apps, All OS, All Arch
+
+on:
+  push:
+    branches: [main, master, "arena/**"]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Target OS or architecture to validate
+        required: true
+        default: all
+        type: choice
+        options: [all, mac, win, linux, x64, arm64, ia32, universal]
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  CSC_IDENTITY_AUTO_DISCOVERY: false
+
+jobs:
+  test:
+    name: Test and Validate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Generate icons
+        run: npm run icons
+      - name: Run full test suite
+        run: npm run test
+      - name: Build web application
+        run: npm run build
+      - name: Validate Electron Builder
+        run: npx electron-builder --help
+      - name: Validate pipeline
+        run: npm run pipeline:validate
+
+  build-matrix:
+    name: Build ${{ matrix.os }} / ${{ matrix.arch }}
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: mac
+            arch: x64
+            runner: macos-latest
+            command: npx electron-builder --mac --x64 -p never --config electron-builder.json
+            artifact: G1Wiggle-*-x64.dmg
+          - os: mac
+            arch: arm64
+            runner: macos-latest
+            command: npx electron-builder --mac --arm64 -p never --config electron-builder.json
+            artifact: G1Wiggle-*-arm64.dmg
+          - os: mac
+            arch: universal
+            runner: macos-latest
+            command: npx electron-builder --mac --universal -p never --config electron-builder.json
+            artifact: G1Wiggle-*-universal.dmg
+          - os: win
+            arch: x64
+            runner: windows-latest
+            command: npx electron-builder --win --x64 -p never --config electron-builder.json
+            artifact: G1Wiggle-Setup-*-x64.exe
+          - os: win
+            arch: ia32
+            runner: windows-latest
+            command: npx electron-builder --win --ia32 -p never --config electron-builder.json
+            artifact: G1Wiggle-Setup-*-ia32.exe
+          - os: win
+            arch: arm64
+            runner: windows-latest
+            command: npx electron-builder --win --arm64 -p never --config electron-builder.json
+            artifact: G1Wiggle-Setup-*-arm64.exe
+          - os: linux
+            arch: x64
+            runner: ubuntu-latest
+            command: npx electron-builder --linux --x64 -p never --config electron-builder.json
+            artifact: G1Wiggle-*-x64.AppImage
+          - os: linux
+            arch: arm64
+            runner: ubuntu-24.04-arm
+            command: npx electron-builder --linux --arm64 -p never --config electron-builder.json
+            artifact: G1Wiggle-*-arm64.AppImage
+          - os: linux
+            arch: ia32
+            runner: ubuntu-latest
+            command: npx electron-builder --linux --ia32 -p never --config electron-builder.json
+            artifact: G1Wiggle-*-ia32.AppImage
+    runs-on: ${{ matrix.runner }}
+    continue-on-error: ${{ matrix.os == 'linux' && matrix.arch == 'ia32' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Generate icons
+        run: npm run icons
+      - name: Build web application
+        run: npm run build
+      - name: Package application
+        shell: bash
+        run: |
+          rm -rf release
+          ${{ matrix.command }}
+      - name: Purge intermediate files
+        shell: bash
+        run: |
+          rm -f release/*.blockmap release/*.yml release/*.yaml release/*.zip || true
+          rm -rf release/*-unpacked release/mac-* release/win-* release/linux-* || true
+      - name: Verify expected artifact
+        shell: bash
+        run: |
+          shopt -s nullglob
+          files=(release/${{ matrix.artifact }})
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "Expected artifact not found: ${{ matrix.artifact }}"
+            ls -la release || true
+            exit 1
+          fi
+          printf '%s\n' "${files[@]}"
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: G1Wiggle-${{ matrix.os }}-${{ matrix.arch }}
+          path: release/${{ matrix.artifact }}
+          if-no-files-found: warn
+          retention-days: 30
+
+  build-all-arch-per-os:
+    name: Build All Arch Per OS
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: mac
+            runner: macos-latest
+            command: npx electron-builder --mac --arm64 --x64 -p never --config electron-builder.json
+          - os: win
+            runner: windows-latest
+            command: npx electron-builder --win --x64 --ia32 -p never --config electron-builder.json
+          - os: linux
+            runner: ubuntu-latest
+            command: npx electron-builder --linux --x64 --arm64 -p never --config electron-builder.json
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Generate icons
+        run: npm run icons
+      - name: Build web application
+        run: npm run build
+      - name: Build all architectures
+        shell: bash
+        run: |
+          rm -rf release
+          ${{ matrix.command }}
+      - name: Purge intermediates
+        shell: bash
+        run: |
+          rm -f release/*.blockmap release/*.yml release/*.yaml release/*.zip || true
+          rm -rf release/*-unpacked || true
+      - name: Upload OS bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: G1Wiggle-all-${{ matrix.os }}
+          path: release/*
+          if-no-files-found: warn
+          retention-days: 30
+
+  build-all:
+    name: Build All OS & Arch
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Generate icons
+        run: npm run icons
+      - name: Build web application
+        run: npm run build
+      - name: Cross-build macOS
+        run: npx electron-builder --mac --arm64 --x64 -p never --config electron-builder.json
+      - name: Cross-build Windows
+        run: npx electron-builder --win --x64 --ia32 -p never --config electron-builder.json
+      - name: Cross-build Linux
+        run: npx electron-builder --linux --x64 --arm64 -p never --config electron-builder.json
+      - name: Purge intermediates
+        shell: bash
+        run: |
+          rm -f release/*.blockmap release/*.yml release/*.yaml release/*.zip || true
+          rm -rf release/*-unpacked release/mac-* release/win-* release/linux-* || true
+      - name: Upload combined release directory
+        uses: actions/upload-artifact@v4
+        with:
+          name: G1Wiggle-all-os-arch
+          path: release/*
+          if-no-files-found: warn
+          retention-days: 30
+
+  summary:
+    name: Build Summary
+    needs: [build-matrix, build-all-arch-per-os, build-all]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Write summary
+        shell: bash
+        run: |
+          {
+            echo "## G1Wiggle Build Matrix"
+            echo
+            echo "| OS | Arch | Artifact | Runner |"
+            echo "| --- | --- | --- | --- |"
+            echo "| macOS | x64 | G1Wiggle-*-x64.dmg | macos-latest |"
+            echo "| macOS | arm64 | G1Wiggle-*-arm64.dmg | macos-latest |"
+            echo "| macOS | universal | G1Wiggle-*-universal.dmg | macos-latest |"
+            echo "| Windows | x64 | G1Wiggle-Setup-*-x64.exe | windows-latest |"
+            echo "| Windows | ia32 | G1Wiggle-Setup-*-ia32.exe | windows-latest |"
+            echo "| Windows | arm64 | G1Wiggle-Setup-*-arm64.exe | windows-latest |"
+            echo "| Linux | x64 | G1Wiggle-*-x64.AppImage | ubuntu-latest |"
+            echo "| Linux | arm64 | G1Wiggle-*-arm64.AppImage | ubuntu-24.04-arm |"
+            echo "| Linux | ia32 | G1Wiggle-*-ia32.AppImage | ubuntu-latest |"
+          } >> "$GITHUB_STEP_SUMMARY"
