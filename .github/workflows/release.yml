@@ -2,8 +2,7 @@ name: Release
 
 on:
   push:
-    tags:
-      - "v*"
+    tags: ["v*"]
   workflow_dispatch:
     inputs:
       version:
@@ -11,6 +10,10 @@ on:
         required: true
         default: v1.0.0
         type: string
+
+concurrency:
+  group: g1wiggle-release-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: write
@@ -23,164 +26,136 @@ jobs:
   test:
     name: Pre-release Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup Node.js 20
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
-      - name: Install dependencies
-        run: npm ci
-      - name: Generate icons
-        run: npm run icons
-      - name: Run tests
-        run: npm run test:all
-      - name: Validate pipeline
-        run: npm run pipeline:validate
-      - name: Build web application
-        run: npm run build
+      - run: npm ci
+      - run: npm run icons
+      - run: npm run test:all
+      - run: npm run build
+      - run: npm run pipeline:validate:verbose
 
-  release-macos:
-    name: Release macOS
+  release-build:
+    name: Release ${{ matrix.os }} / ${{ matrix.arch }}
     needs: test
-    runs-on: macos-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup Node.js 20
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-      - name: Install dependencies
-        run: npm ci
-      - name: Generate icons
-        run: npm run icons
-      - name: Build web application
-        run: npm run build
-      - name: Build macOS x64
-        run: npx electron-builder --mac --x64 -p never --config electron-builder.json
-      - name: Build macOS arm64
-        run: npx electron-builder --mac --arm64 -p never --config electron-builder.json
-      - name: Build macOS universal
-        run: npx electron-builder --mac --universal -p never --config electron-builder.json
-      - name: Purge intermediates
-        shell: bash
-        run: rm -f release/*.blockmap release/*.yml release/*.yaml release/*.zip; rm -rf release/*-unpacked
-      - name: Upload macOS release artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: G1Wiggle-release-macos
-          path: release/*
-          if-no-files-found: error
-          retention-days: 90
-
-  release-windows:
-    name: Release Windows
-    needs: release-macos
-    runs-on: windows-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup Node.js 20
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-      - name: Install dependencies
-        run: npm ci
-      - name: Generate icons
-        run: npm run icons
-      - name: Build web application
-        run: npm run build
-      - name: Build Windows x64
-        run: npx electron-builder --win --x64 -p never --config electron-builder.json
-      - name: Build Windows ia32
-        run: npx electron-builder --win --ia32 -p never --config electron-builder.json
-      - name: Build Windows arm64
-        run: npx electron-builder --win --arm64 -p never --config electron-builder.json
-      - name: Purge intermediates
-        shell: bash
-        run: rm -f release/*.blockmap release/*.yml release/*.yaml release/*.zip; rm -rf release/*-unpacked
-      - name: Upload Windows release artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: G1Wiggle-release-windows
-          path: release/*
-          if-no-files-found: warn
-          retention-days: 90
-
-  release-linux:
-    name: Release Linux
-    needs: release-windows
     strategy:
       fail-fast: true
       max-parallel: 1
       matrix:
         include:
-          - runner: ubuntu-latest
-            arch: x64
-            command: npx electron-builder --linux --x64 -p never --config electron-builder.json
-          - runner: ubuntu-24.04-arm
-            arch: arm64
-            command: npx electron-builder --linux --arm64 -p never --config electron-builder.json
-          - runner: ubuntu-latest
-            arch: ia32
-            command: npx electron-builder --linux --ia32 -p never --config electron-builder.json
-          - runner: ubuntu-latest
-            arch: armv7l
-            command: npx electron-builder --linux --armv7l -p never --config electron-builder.json
+          - { os: mac, arch: x64, runner: macos-15-intel, command: "npx electron-builder --mac --x64 -p never --config electron-builder.json", artifact: "G1Wiggle-*-x64.dmg" }
+          - { os: mac, arch: arm64, runner: macos-latest, command: "npx electron-builder --mac --arm64 -p never --config electron-builder.json", artifact: "G1Wiggle-*-arm64.dmg" }
+          - { os: mac, arch: universal, runner: macos-latest, command: "npx electron-builder --mac --universal -p never --config electron-builder.json", artifact: "G1Wiggle-*-universal.dmg" }
+          - { os: win, arch: x64, runner: windows-latest, command: "npx electron-builder --win --x64 -p never --config electron-builder.json", artifact: "G1Wiggle-Setup-*-x64.exe" }
+          - { os: win, arch: ia32, runner: windows-latest, command: "npx electron-builder --win --ia32 -p never --config electron-builder.json", artifact: "G1Wiggle-Setup-*-ia32.exe" }
+          - { os: win, arch: arm64, runner: windows-11-arm, command: "npx electron-builder --win --arm64 -p never --config electron-builder.json", artifact: "G1Wiggle-Setup-*-arm64.exe" }
+          - { os: linux, arch: x64, runner: ubuntu-latest, command: "npx electron-builder --linux --x64 -p never --config electron-builder.json", artifact: "G1Wiggle-*-x64.AppImage" }
+          - { os: linux, arch: arm64, runner: ubuntu-24.04-arm, command: "npx electron-builder --linux --arm64 -p never --config electron-builder.json", artifact: "G1Wiggle-*-arm64.AppImage" }
+          - { os: linux, arch: ia32, runner: ubuntu-latest, command: "npx electron-builder --linux --ia32 -p never --config electron-builder.json", artifact: "G1Wiggle-*-ia32.AppImage" }
+          - { os: linux, arch: armv7l, runner: ubuntu-latest, command: "npx electron-builder --linux --armv7l -p never --config electron-builder.json", artifact: "G1Wiggle-*-armv7l.AppImage" }
     runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup Node.js 20
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
-      - name: Install dependencies
-        run: npm ci
-      - name: Generate icons
-        run: npm run icons
-      - name: Build web application
-        run: npm run build
-      - name: Build Linux ${{ matrix.arch }}
-        run: ${{ matrix.command }}
+      - run: npm ci
+      - run: npm run icons
+      - run: npm run build
+      - name: Package release artifact
+        shell: bash
+        run: |
+          rm -rf release
+          ${{ matrix.command }}
+      - name: Verify exact artifact
+        shell: bash
+        run: |
+          shopt -s nullglob
+          files=(release/${{ matrix.artifact }})
+          test ${#files[@]} -eq 1
+          test -s "${files[0]}"
+      - name: Install/smoke-test Linux
+        if: ${{ startsWith(matrix.os, 'linux') }}
+        shell: bash
+        run: |
+          shopt -s nullglob
+          files=(release/${{ matrix.artifact }})
+          test ${#files[@]} -eq 1
+          chmod +x "${files[0]}"
+          "${files[0]}" --appimage-version
+          "${files[0]}" --appimage-extract-and-run --version
+      - name: Install/smoke-test macOS
+        if: ${{ matrix.os == 'mac' }}
+        shell: bash
+        run: |
+          shopt -s nullglob
+          files=(release/${{ matrix.artifact }})
+          test ${#files[@]} -eq 1
+          mount_point="$RUNNER_TEMP/g1wiggle-dmg"
+          mkdir -p "$mount_point"
+          hdiutil attach "${files[0]}" -mountpoint "$mount_point" -nobrowse -quiet
+          test -x "$mount_point/G1Wiggle.app/Contents/MacOS/G1Wiggle"
+          "$mount_point/G1Wiggle.app/Contents/MacOS/G1Wiggle" --version
+          hdiutil detach "$mount_point" -quiet
+      - name: Install/smoke-test Windows
+        if: ${{ matrix.os == 'win' }}
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $files = @(Get-ChildItem -Path 'release' -Filter '${{ matrix.artifact }}' -File)
+          if ($files.Count -ne 1) { throw "Expected one installer, found $($files.Count)" }
+          $target = Join-Path $env:RUNNER_TEMP 'G1Wiggle-install'
+          Remove-Item -Recurse -Force $target -ErrorAction SilentlyContinue
+          Start-Process -FilePath $files[0].FullName -ArgumentList '/S',('/D='+$target) -Wait
+          $exe = Join-Path $target 'G1Wiggle.exe'
+          if (!(Test-Path $exe)) { throw "Installed executable not found" }
+          & $exe --version
       - name: Purge intermediates
         shell: bash
-        run: rm -f release/*.blockmap release/*.yml release/*.yaml release/*.zip; rm -rf release/*-unpacked
-      - name: Upload Linux release artifacts
+        run: |
+          rm -f release/*.blockmap release/*.yml release/*.yaml release/*.zip || true
+          rm -rf release/*-unpacked release/mac-* release/win-* release/linux-* || true
+      - name: Upload release artifact
         uses: actions/upload-artifact@v4
         with:
-          name: G1Wiggle-release-linux-${{ matrix.arch }}
-          path: release/*
-          if-no-files-found: warn
+          name: G1Wiggle-release-${{ matrix.os }}-${{ matrix.arch }}
+          path: release/${{ matrix.artifact }}
+          if-no-files-found: error
           retention-days: 90
 
   release-summary:
     name: Publish GitHub Release
-    needs: [release-macos, release-windows, release-linux]
-    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    needs: release-build
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     steps:
-      - name: Download all release artifacts
-        uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v4
         with:
           path: release-artifacts
+          pattern: G1Wiggle-release-*
           merge-multiple: true
-      - name: Show release artifacts
-        run: find release-artifacts -type f -maxdepth 3 -print
+      - name: Verify complete release set
+        shell: bash
+        run: |
+          shopt -s nullglob
+          files=(release-artifacts/*.dmg release-artifacts/*.exe release-artifacts/*.AppImage)
+          test ${#files[@]} -eq 10
+          printf '%s
+' "${files[@]}"
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
           files: |
-            release-artifacts/**/*.dmg
-            release-artifacts/**/*.exe
-            release-artifacts/**/*.AppImage
+            release-artifacts/*.dmg
+            release-artifacts/*.exe
+            release-artifacts/*.AppImage
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
