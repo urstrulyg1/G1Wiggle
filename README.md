@@ -111,17 +111,27 @@ npm run build
 
 ### Desktop Packaging (Zero-Config)
 
-The automated `build.sh` script automatically detects your current operating system and packages native production installers into `release/` with **zero flags required**:
+The automated packaging scripts automatically detect your current operating system and package native production installers into `release/` with **zero flags required**:
 
 ```bash
-# Automatically detects OS (macOS -> .dmg, Windows -> .exe, Linux -> AppImage)
+# macOS / Linux (automatically detects OS -> .dmg / AppImage)
 ./build.sh
 
 # Or via npm script:
 npm run build:desktop
 ```
 
+```bat
+:: Windows (automatically detects x64 / x86 / ARM64 -> .exe NSIS installer)
+build.bat
+
+:: Or via npm script:
+npm run build:desktop:win
+```
+
 #### Optional Manual Overrides
+
+macOS / Linux (`build.sh`):
 
 ```bash
 # Cross-compile all targets (macOS, Windows, and Linux)
@@ -138,6 +148,23 @@ npm run build:desktop
 
 # Clean build caches before packaging
 ./build.sh --clean
+```
+
+Windows (`build.bat` supports the same flags):
+
+```bat
+:: Build all Windows architectures (x64 & x86/ia32)
+build.bat --all-arch
+
+:: Force a specific architecture
+build.bat --x64
+build.bat --ia32
+
+:: Clean build caches and skip the test suite
+build.bat --clean --skip-tests
+
+:: Show all options
+build.bat --help
 ```
 
 ## License
