@@ -132,7 +132,6 @@ jobs:
   release-summary:
     name: Publish GitHub Release
     needs: release-build
-    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
