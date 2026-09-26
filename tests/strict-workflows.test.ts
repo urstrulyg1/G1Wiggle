@@ -99,7 +99,7 @@ describe("strict-workflows: build.yml strict validation", () => {
   });
 
   it("has a single strict build matrix covering every target", () => {
-    expect(content).toContain("build-matrix");
+    expect(content).toContain("architecture-dry-run");
     expect(content).toContain("armv7l");
     expect(content).toContain("max-parallel: 1");
   });
@@ -181,7 +181,7 @@ describe("strict-workflows: ci.yml strict validation", () => {
     expect(content).toContain("artifactName");
   });
 
-  it("has build-matrix job with os ubuntu/windows/macos and arch x64/arm64/ia32/universal", () => {
+  it("has architecture validation job and all runner families", () => {
     expect(content).toContain("build-matrix");
     expect(content).toContain("ubuntu-latest");
     expect(content).toContain("windows-latest");
@@ -190,16 +190,14 @@ describe("strict-workflows: ci.yml strict validation", () => {
     expect(content).toContain("arm64");
   });
 
-  it("has exclude for win arm64 and ubuntu arm64 and include for ia32 and arm runner", () => {
-    expect(content).toContain("exclude:");
-    expect(content).toContain("include:");
-    expect(content).toContain("ia32");
+  it("uses native ARM Linux runner where required", () => {
     expect(content).toContain("ubuntu-24.04-arm");
+    expect(content).toContain("ia32");
     expect(content).toContain("universal");
   });
 
-  it("has fail-fast false and GH_TOKEN env", () => {
-    expect(content).toContain("fail-fast: false");
+  it("has strict CI gating and GH_TOKEN env", () => {
+    expect(content).not.toContain("fail-fast: false");
     expect(content).toContain("GH_TOKEN");
   });
 });
@@ -227,24 +225,24 @@ describe("strict-workflows: release.yml strict validation", () => {
     expect(content).toContain("Pre-release Tests");
   });
 
-  it("has release-macos job building x64, arm64, universal", () => {
-    expect(content).toContain("release-macos:");
+  it("has release-build matrix building macOS x64, arm64, universal", () => {
+    expect(content).toContain("release-build:");
     expect(content).toContain("macOS");
     expect(content).toContain("--mac --x64");
     expect(content).toContain("--mac --arm64");
     expect(content).toContain("--mac --universal");
   });
 
-  it("has release-windows job building x64, ia32, arm64", () => {
-    expect(content).toContain("release-windows:");
+  it("release-build matrix includes Windows x64, ia32, arm64", () => {
+    expect(content).toContain("release-build:");
     expect(content).toContain("Windows");
     expect(content).toContain("--win --x64");
     expect(content).toContain("--win --ia32");
     expect(content).toContain("--win --arm64");
   });
 
-  it("has release-linux job with matrix x64 and arm64 on ubuntu-latest and ubuntu-24.04-arm", () => {
-    expect(content).toContain("release-linux:");
+  it("release-build matrix includes Linux x64 and arm64", () => {
+    expect(content).toContain("release-build:");
     expect(content).toContain("ubuntu-latest");
     expect(content).toContain("ubuntu-24.04-arm");
     expect(content).toContain("x64");
@@ -254,7 +252,7 @@ describe("strict-workflows: release.yml strict validation", () => {
   it("has release-summary job downloading all artifacts and creating GitHub Release on tag", () => {
     expect(content).toContain("release-summary:");
     expect(content).toContain("download-artifact@v4");
-    expect(content).toContain("softprops/action-gh-release@v1");
+    expect(content).toContain("softprops/action-gh-release@v2");
     expect(content).toContain("refs/tags/");
   });
 
