@@ -40,7 +40,7 @@ jobs:
           grep -F -- '--ia32' build.sh
           grep -F -- '--all-arch' build.sh
       - name: Validate configuration
-        run: node -e "const c=require('./electron-builder.json'); if (c.publish !== null) process.exit(1); if (!c.mac.artifactName.includes('${arch}')) process.exit(1); if (!c.nsis.artifactName.includes('${arch}')) process.exit(1); if (!c.linux.artifactName.includes('${arch}')) process.exit(1)"
+        run: node -e 'const c=require("./electron-builder.json"); if (c.publish !== null) process.exit(1); if (!c.mac.artifactName.includes("${arch}")) process.exit(1); if (!c.nsis.artifactName.includes("${arch}")) process.exit(1); if (!c.linux.artifactName.includes("${arch}")) process.exit(1)'
       - name: Run pipeline validator
         run: npm run pipeline:validate:verbose
       - name: Run all tests
