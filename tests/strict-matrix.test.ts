@@ -313,18 +313,15 @@ describe("strict-matrix: GitHub workflows matrix completeness", () => {
     expect(buildYml).toContain("ubuntu-24.04-arm");
   });
 
-  it("build.yml has build-all-arch-per-os for mac, win, linux", () => {
-    expect(buildYml).toContain("build-all-arch-per-os");
-    expect(buildYml).toContain("--arm64 --x64");
-    expect(buildYml).toContain("--x64 --ia32");
-    expect(buildYml).toContain("--x64 --arm64");
+  it("build.yml has one serialized matrix for all targets", () => {
+    expect(buildYml).toContain("build-matrix");
+    expect(buildYml).toContain("max-parallel: 1");
+    expect(buildYml).toContain("armv7l");
   });
 
-  it("build.yml has build-all cross-compiling all OS", () => {
-    expect(buildYml).toContain("build-all:");
-    expect(buildYml).toContain("--mac --arm64 --x64");
-    expect(buildYml).toContain("--win --x64 --ia32");
-    expect(buildYml).toContain("--linux --x64 --arm64");
+  it("build.yml does not cross-compile unrelated operating systems from one runner", () => {
+    expect(buildYml).not.toContain("build-all:");
+    expect(buildYml).not.toContain("Build All OS & Arch");
   });
 });
 
