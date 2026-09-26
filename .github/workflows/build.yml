@@ -99,6 +99,11 @@ jobs:
             runner: ubuntu-latest
             command: npx electron-builder --linux --ia32 -p never --config electron-builder.json
             artifact: G1Wiggle-*-ia32.AppImage
+          - os: linux
+            arch: armv7l
+            runner: ubuntu-latest
+            command: npx electron-builder --linux --armv7l -p never --config electron-builder.json
+            artifact: G1Wiggle-*-armv7l.AppImage
     runs-on: ${{ matrix.runner }}
     steps:
       - name: Checkout
@@ -140,7 +145,7 @@ jobs:
         with:
           name: G1Wiggle-${{ matrix.os }}-${{ matrix.arch }}
           path: release/${{ matrix.artifact }}
-          if-no-files-found: warn
+          if-no-files-found: error
           retention-days: 30
 
   summary:
