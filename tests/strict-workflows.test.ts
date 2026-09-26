@@ -99,7 +99,7 @@ describe("strict-workflows: build.yml strict validation", () => {
   });
 
   it("has a single strict build matrix covering every target", () => {
-    expect(content).toContain("architecture-dry-run");
+    expect(content).toContain("build-matrix");
     expect(content).toContain("armv7l");
     expect(content).toContain("max-parallel: 1");
   });
@@ -130,9 +130,9 @@ describe("strict-workflows: build.yml strict validation", () => {
     expect(content).toContain("*-unpacked");
   });
 
-  it("has upload-artifact@v4 with name, path, if-no-files-found warn, retention-days 30", () => {
+  it("has upload-artifact@v4 with strict missing-artifact failure, retention-days 30", () => {
     expect(content).toContain("actions/upload-artifact@v4");
-    expect(content).toContain("if-no-files-found: warn");
+    expect(content).toContain("if-no-files-found: error");
     expect(content).toContain("retention-days: 30");
   });
 
@@ -260,9 +260,11 @@ describe("strict-workflows: release.yml strict validation", () => {
     expect(content).toContain("retention-days: 90");
   });
 
-  it("has needs dependencies: test for release jobs, and release jobs for summary", () => {
+  it("has release dependencies chained in strict order", () => {
     expect(content).toContain("needs: test");
-    expect(content).toContain("needs: [release-macos, release-windows, release-linux]");
+    expect(content).toContain("needs: release-macos");
+    expect(content).toContain("needs: release-windows");
+    expect(content).toContain("needs: release-build");
   });
 
   it("has GH_TOKEN and CSC_IDENTITY_AUTO_DISCOVERY false", () => {
