@@ -256,7 +256,7 @@ describe("strict-workflows: release.yml strict validation", () => {
     expect(content).toContain("release-summary:");
     expect(content).toContain("download-artifact@v4");
     expect(content).toContain("softprops/action-gh-release@v2");
-    expect(content).toContain("refs/tags/");
+    expect(content).toContain('tag_name:');
   });
 
   it("has upload-artifact with retention 90 days for releases", () => {
