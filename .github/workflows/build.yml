@@ -192,7 +192,6 @@ jobs:
   summary:
     name: Build Summary
     needs: [build-matrix]
-    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     steps:
       - name: Write summary
