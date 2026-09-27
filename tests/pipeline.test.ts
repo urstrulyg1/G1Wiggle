@@ -120,7 +120,7 @@ export const FULL_BUILD_MATRIX: BuildTarget[] = [
     arch: "arm64",
     ext: "AppImage",
     platformNode: "linux",
-    runner: "ubuntu-latest-arm",
+    runner: "ubuntu-24.04-arm",
     artifactPattern: "G1Wiggle-${version}-${arch}.AppImage",
     electronBuilderFlag: "--linux --arm64",
     supported: true,
