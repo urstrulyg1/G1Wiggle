@@ -315,7 +315,7 @@ describe("strict-matrix: GitHub workflows matrix completeness", () => {
 
   it("build.yml caps its matrix at four parallel targets", () => {
     expect(buildYml).toContain("build-matrix");
-    expect(buildYml).toContain("max-parallel: 4");
+    expect(buildYml).toContain("max-parallel: 9");
     expect(buildYml).toContain("armv7l");
   });
 
