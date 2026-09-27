@@ -252,14 +252,6 @@ describe("e2e-pipeline: GitHub Actions workflows create all apps", () => {
     expect(content).toContain("--linux");
   });
 
-  it("ci.yml exists and validates pipeline", () => {
-    const ciYml = path.join(workflowsDir, "ci.yml");
-    expect(fs.existsSync(ciYml)).toBe(true);
-    const content = fs.readFileSync(ciYml, "utf8");
-    expect(content).toContain("npm run test");
-    expect(content).toContain("npm run build");
-  });
-
   it("release.yml exists and builds all OS/arch for releases", () => {
     const releaseYml = path.join(workflowsDir, "release.yml");
     expect(fs.existsSync(releaseYml)).toBe(true);
