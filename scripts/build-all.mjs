@@ -42,6 +42,14 @@ const filterArch = (arch) => {
   return requested.includes(arch);
 };
 
+// ELECTRON_BUILDER_7Z_FILTER=BCJ keeps ARM64 Windows installers extractable: electron-builder
+// 26.15.3's 7-Zip uses an ARM64 filter that the NSIS Nsis7z extractor cannot decode.
+const BUILD_ENV = {
+  ...process.env,
+  CSC_IDENTITY_AUTO_DISCOVERY: "false",
+  ELECTRON_BUILDER_7Z_FILTER: process.env.ELECTRON_BUILDER_7Z_FILTER || "BCJ",
+};
+
 // Matrix definition — single source of truth
 const MATRIX = [
   // macOS primary
@@ -79,7 +87,7 @@ function runCommand(cmd, cwd = rootDir) {
   }
   log(`▶ ${cmd}`, "cyan");
   try {
-    execSync(cmd, { cwd, stdio: "inherit", env: { ...process.env, CSC_IDENTITY_AUTO_DISCOVERY: "false" } });
+    execSync(cmd, { cwd, stdio: "inherit", env: BUILD_ENV });
     return true;
   } catch (e) {
     log(`✖ Failed: ${cmd}`, "red");
@@ -94,7 +102,7 @@ async function runParallel(commands) {
   }
   const promises = commands.map(cmd => new Promise((resolve) => {
     log(`▶ (parallel) ${cmd}`, "cyan");
-    const child = spawn(cmd, { shell: true, cwd: rootDir, stdio: "inherit", env: { ...process.env, CSC_IDENTITY_AUTO_DISCOVERY: "false" } });
+    const child = spawn(cmd, { shell: true, cwd: rootDir, stdio: "inherit", env: BUILD_ENV });
     child.on("close", code => resolve(code === 0));
   }));
   const results = await Promise.all(promises);

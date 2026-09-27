@@ -20,6 +20,10 @@ permissions:
 env:
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   CSC_IDENTITY_AUTO_DISCOVERY: false
+  # electron-builder 26.15.3's bundled 7-Zip packs ARM64 .exe/.dll files with the ARM64 filter,
+  # which the NSIS installer's Nsis7z extractor silently skips (app installs without G1Wiggle.exe).
+  # BCJ is readable by every 7z decoder; upstream pins it from app-builder-lib 26.15.6.
+  ELECTRON_BUILDER_7Z_FILTER: BCJ
 
 jobs:
   test:

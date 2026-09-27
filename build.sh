@@ -36,6 +36,10 @@ RED='\033[0;31m'
 PURPLE='\033[0;35m'
 NC='\033[0m' # No Color
 
+# Keep ARM64 Windows installers extractable: electron-builder 26.15.3's 7-Zip uses an ARM64
+# filter that the NSIS Nsis7z extractor cannot decode (installs without G1Wiggle.exe).
+export ELECTRON_BUILDER_7Z_FILTER="${ELECTRON_BUILDER_7Z_FILTER:-BCJ}"
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 

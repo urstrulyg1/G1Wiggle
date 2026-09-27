@@ -139,6 +139,15 @@ describe("strict-matrix: secondary and legacy", () => {
     expect(ALL.length).toBe(9);
   });
 
+  it("Windows installer builds force the BCJ 7z filter so NSIS can extract ARM64 binaries", () => {
+    for (const file of [".github/workflows/build.yml", ".github/workflows/release.yml"]) {
+      expect(read(file)).toContain("ELECTRON_BUILDER_7Z_FILTER: BCJ");
+    }
+    expect(read("build.sh")).toContain("ELECTRON_BUILDER_7Z_FILTER");
+    expect(read("build.bat")).toContain("ELECTRON_BUILDER_7Z_FILTER");
+    expect(read("scripts/build-all.mjs")).toContain("ELECTRON_BUILDER_7Z_FILTER");
+  });
+
   it("no workflow or build script packages Linux ia32", () => {
     for (const file of [".github/workflows/build.yml", ".github/workflows/ci.yml", ".github/workflows/release.yml", "scripts/build-all.mjs"]) {
       expect(read(file)).not.toContain("--linux --ia32");

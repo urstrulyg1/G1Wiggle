@@ -40,6 +40,10 @@ set "RED=!ESC![0;31m"
 set "PURPLE=!ESC![0;35m"
 set "NC=!ESC![0m"
 
+:: Keep ARM64 Windows installers extractable: electron-builder 26.15.3's 7-Zip uses an ARM64
+:: filter that the NSIS Nsis7z extractor cannot decode (installs without G1Wiggle.exe).
+if not defined ELECTRON_BUILDER_7Z_FILTER set "ELECTRON_BUILDER_7Z_FILTER=BCJ"
+
 :: --- 1. Hardware architecture auto-detection -----------------------------------
 :: PROCESSOR_ARCHITEW6432 exposes the true machine arch when running 32-bit CMD
 :: on 64-bit Windows; fall back to PROCESSOR_ARCHITECTURE otherwise.
