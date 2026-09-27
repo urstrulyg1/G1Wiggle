@@ -46,10 +46,6 @@ describe("e2e-pipeline: vite build produces universal web bundle for all OS/arch
   });
 
   it("dist is self-contained (singlefile) for desktop embedding on all OS", () => {
-    if (!fs.existsSync(distDir)) {
-      expect(true).toBe(true);
-      return;
-    }
     const files = fs.readdirSync(distDir);
     // Singlefile should produce primarily index.html, maybe with assets inlined
     expect(files).toContain("index.html");
@@ -117,24 +113,18 @@ describe("e2e-pipeline: electron-builder can target all OS/arch", () => {
   });
 
   it("electron-builder CLI is available and --help works", () => {
-    try {
-      const help = execSync("npx electron-builder --help", {
-        cwd: rootDir,
-        encoding: "utf8",
-        timeout: 30000,
-      });
-      expect(help).toContain("electron-builder");
-      expect(help).toContain("--mac");
-      expect(help).toContain("--win");
-      expect(help).toContain("--linux");
-      expect(help).toContain("--x64");
-      expect(help).toContain("--arm64");
-      expect(help).toContain("--ia32");
-    } catch (e) {
-      // If electron-builder not available, skip but don't fail pipeline validation
-      console.warn("electron-builder --help failed, skipping:", (e as Error).message);
-      expect(true).toBe(true);
-    }
+    const help = execSync("npx electron-builder --help", {
+      cwd: rootDir,
+      encoding: "utf8",
+      timeout: 30000,
+    });
+    expect(help).toContain("electron-builder");
+    expect(help).toContain("--mac");
+    expect(help).toContain("--win");
+    expect(help).toContain("--linux");
+    expect(help).toContain("--x64");
+    expect(help).toContain("--arm64");
+    expect(help).toContain("--ia32");
   });
 
   it("validates build commands for all OS/arch would be accepted by electron-builder", () => {
@@ -179,7 +169,7 @@ describe("e2e-pipeline: full pipeline simulation creating all apps", () => {
     expect(packagingStep.creates.some((f) => f.includes("arm64.dmg"))).toBe(true);
     expect(packagingStep.creates.some((f) => f.includes("x64.exe"))).toBe(true);
     expect(packagingStep.creates.some((f) => f.includes("ia32.exe"))).toBe(true);
-    expect(packagingStep.creates.some((f) => f.includes("x64.AppImage"))).toBe(true);
+    expect(packagingStep.creates.some((f) => f.includes("x86_64.AppImage"))).toBe(true);
     expect(packagingStep.creates.some((f) => f.includes("arm64.AppImage"))).toBe(true);
   });
 
