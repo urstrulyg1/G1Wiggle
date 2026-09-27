@@ -102,7 +102,7 @@ if ($null -eq $entry) { $entry = $entries | Select-Object -First 1 }
 $installDir = [string](Get-PropertyValue $entry "InstallLocation")
 $displayIcon = [string](Get-PropertyValue $entry "DisplayIcon")
 if ([string]::IsNullOrWhiteSpace($installDir) -and $displayIcon) {
-  $iconPath = $displayIcon -replace ',\s*-?\d+
+  $iconPath = $displayIcon -replace ',\s*-?\d+$', ''
   $iconPath = $iconPath.Trim('"')
   if (Test-Path -LiteralPath $iconPath -PathType Leaf) {
     $installDir = Split-Path -Parent $iconPath
