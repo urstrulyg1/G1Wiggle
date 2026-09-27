@@ -244,9 +244,10 @@ case "$TARGET" in
     fi
     ;;
   win)
+    if [ "$TARGET_ARCH" = "arm64" ]; then echo "Windows ARM64 is not a supported G1Wiggle target."; exit 1; fi
     if [ "$BUILD_ALL_ARCH" = true ]; then
-      echo -e "   → Packaging Windows EXEs for all architectures (x64 + arm64 + ia32/x86)..."
-      npx electron-builder --win --x64 --ia32 --arm64 -p never --config electron-builder.json
+      echo -e "   → Packaging Windows EXEs for supported architectures (x64 + ia32/x86)..."
+      npx electron-builder --win --x64 --ia32 -p never --config electron-builder.json
     else
       echo -e "   → Packaging Windows EXE specifically for detected hardware (${TARGET_ARCH})..."
       npx electron-builder --win "--${TARGET_ARCH}" -p never --config electron-builder.json
