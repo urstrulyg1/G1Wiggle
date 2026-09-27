@@ -28,16 +28,29 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
-      - run: npm ci
-      - run: npm run icons
-      - run: npm run test:all
-      - run: npm run build
-      - run: npm run pipeline:validate:verbose
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate icons
+        run: npm run icons
+
+      - name: Run full checks
+        run: npm run test:all
+
+      - name: Build web application
+        run: npm run build
+
+      - name: Validate pipeline contract
+        run: npm run pipeline:validate:verbose
 
   release-build:
     name: Release ${{ matrix.os }} / ${{ matrix.arch }}
@@ -60,19 +73,30 @@ jobs:
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
-      - run: npm ci
-      - run: npm run icons
-      - run: npm run build
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate icons
+        run: npm run icons
+
+      - name: Build web application
+        run: npm run build
+
       - name: Package release artifact
         shell: bash
         run: |
           rm -rf release
           ${{ matrix.command }}
+
       - name: Verify exact artifact
         shell: bash
         run: |
@@ -80,6 +104,7 @@ jobs:
           files=(release/${{ matrix.artifact }})
           test ${#files[@]} -eq 1
           test -s "${files[0]}"
+
       - name: Install/smoke-test Linux
         if: ${{ startsWith(matrix.os, 'linux') }}
         shell: bash
@@ -90,6 +115,7 @@ jobs:
           chmod +x "${files[0]}"
           "${files[0]}" --appimage-version
           "${files[0]}" --appimage-extract-and-run --version
+
       - name: Install/smoke-test macOS
         if: ${{ matrix.os == 'mac' }}
         shell: bash
@@ -103,6 +129,7 @@ jobs:
           test -x "$mount_point/G1Wiggle.app/Contents/MacOS/G1Wiggle"
           "$mount_point/G1Wiggle.app/Contents/MacOS/G1Wiggle" --version
           hdiutil detach "$mount_point" -quiet
+
       - name: Install/smoke-test Windows
         if: ${{ matrix.os == 'win' }}
         shell: pwsh
@@ -116,11 +143,13 @@ jobs:
           $exe = Join-Path $target 'G1Wiggle.exe'
           if (!(Test-Path $exe)) { throw "Installed executable not found" }
           & $exe --version
+
       - name: Purge intermediates
         shell: bash
         run: |
           rm -f release/*.blockmap release/*.yml release/*.yaml release/*.zip || true
           rm -rf release/*-unpacked release/mac-* release/win-* release/linux-* || true
+
       - name: Upload release artifact
         uses: actions/upload-artifact@v4
         with:
@@ -134,19 +163,21 @@ jobs:
     needs: release-build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/download-artifact@v4
+      - name: Download release artifacts
+        uses: actions/download-artifact@v4
         with:
           path: release-artifacts
           pattern: G1Wiggle-release-*
           merge-multiple: true
+
       - name: Verify complete release set
         shell: bash
         run: |
           shopt -s nullglob
           files=(release-artifacts/*.dmg release-artifacts/*.exe release-artifacts/*.AppImage)
           test ${#files[@]} -eq 10
-          printf '%s
-' "${files[@]}"
+          printf '%s\n' "${files[@]}"
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:

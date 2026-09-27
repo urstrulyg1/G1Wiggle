@@ -20,15 +20,19 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Setup Node.js 20
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
+
       - name: Install dependencies
         run: npm ci
+
       - name: Generate icons
         run: npm run icons
+
       - name: Validate build.sh
         run: |
           test -x build.sh || chmod +x build.sh
@@ -39,14 +43,19 @@ jobs:
           grep -F -- '--arm64' build.sh
           grep -F -- '--ia32' build.sh
           grep -F -- '--all-arch' build.sh
+
       - name: Validate configuration
         run: node -e 'const c=require("./electron-builder.json"); if (c.publish !== null) process.exit(1); if (!c.mac.artifactName.includes("${arch}")) process.exit(1); if (!c.nsis.artifactName.includes("${arch}")) process.exit(1); if (!c.linux.artifactName.includes("${arch}")) process.exit(1)'
+
       - name: Run pipeline validator
         run: npm run pipeline:validate:verbose
+
       - name: Run all tests
         run: npm run test:all
+
       - name: Build web application
         run: npm run build
+
       - name: Validate Electron Builder CLI
         run: npx electron-builder --help
 
@@ -75,23 +84,30 @@ jobs:
             arch: ia32
           - os: macos-latest
             arch: universal
+
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Setup Node.js 20
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
+
       - name: Install dependencies
         run: npm ci
+
       - name: Generate icons
         run: npm run icons
+
       - name: Build web application
         run: npm run build
+
       - name: Validate Electron Builder CLI
         run: npx electron-builder --help
+
       - name: Validate architecture target
         shell: bash
         run: |

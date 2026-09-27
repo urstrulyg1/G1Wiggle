@@ -246,10 +246,15 @@ describe("pipeline: build scripts (build.sh & build.bat)", () => {
     batContent = readFileSafe(batPath);
   });
 
-  it("build.sh exists and is executable", () => {
+  it("build.sh exists and is executable on POSIX systems", () => {
     expect(fs.existsSync(shPath)).toBe(true);
+    if (process.platform === "win32") {
+      // Windows NTFS does not expose POSIX execute bits the same way; it still
+      // must remain a valid bash script for Unix/WSL runners.
+      expect(fs.readFileSync(shPath, "utf8")).toContain("#!/usr/bin/env bash");
+      return;
+    }
     const stat = fs.statSync(shPath);
-    // executable bit check (owner exec)
     expect(stat.mode & 0o100).toBeTruthy();
   });
 

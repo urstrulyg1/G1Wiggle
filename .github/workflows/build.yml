@@ -28,21 +28,28 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Setup Node.js 20
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
+
       - name: Install dependencies
         run: npm ci
+
       - name: Generate icons
         run: npm run icons
+
       - name: Run full test suite
         run: npm run test
+
       - name: Build web application
         run: npm run build
+
       - name: Validate Electron Builder
         run: npx electron-builder --help
+
       - name: Validate pipeline
         run: npm run pipeline:validate
 
@@ -104,26 +111,33 @@ jobs:
             runner: ubuntu-latest
             command: npx electron-builder --linux --armv7l -p never --config electron-builder.json
             artifact: G1Wiggle-*-armv7l.AppImage
+
     runs-on: ${{ matrix.runner }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
       - name: Setup Node.js 20
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
+
       - name: Install dependencies
         run: npm ci
+
       - name: Generate icons
         run: npm run icons
+
       - name: Build web application
         run: npm run build
+
       - name: Package application
         shell: bash
         run: |
           rm -rf release
           ${{ matrix.command }}
+
       - name: Validate Linux AppImage
         if: ${{ startsWith(matrix.os, 'linux') }}
         shell: bash
@@ -170,6 +184,7 @@ jobs:
         run: |
           rm -f release/*.blockmap release/*.yml release/*.yaml release/*.zip || true
           rm -rf release/*-unpacked release/mac-* release/win-* release/linux-* || true
+
       - name: Verify expected artifact
         shell: bash
         run: |
@@ -181,6 +196,7 @@ jobs:
             exit 1
           fi
           printf '%s\n' "${files[@]}"
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:

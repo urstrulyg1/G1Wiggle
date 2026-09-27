@@ -331,7 +331,11 @@ describe("strict: build.sh exact validation", () => {
     expect(content).toContain("ls -lh release/");
   });
 
-  it("is executable", () => {
+  it("is executable on POSIX systems", () => {
+    if (process.platform === "win32") {
+      expect(read("build.sh")).toContain("#!/usr/bin/env bash");
+      return;
+    }
     const stat = fs.statSync(path.join(rootDir, "build.sh"));
     expect(stat.mode & 0o111).toBeTruthy();
   });
