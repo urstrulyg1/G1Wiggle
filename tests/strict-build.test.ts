@@ -232,10 +232,10 @@ describe("strict-build: test-pipeline.mjs strict", () => {
     content = read("scripts/test-pipeline.mjs");
   });
 
-  it("has shebang and MATRIX with primary artifacts", () => {
+  it("has shebang and MATRIX with supported targets", () => {
     expect(content).toContain("#!/usr/bin/env node");
     expect(content).toContain("MATRIX");
-    expect(content).toContain("primary artifacts");
+    expect(content).toContain("supported build targets");
     expect(content).toContain("mac");
     expect(content).toContain("win");
     expect(content).toContain("linux");
