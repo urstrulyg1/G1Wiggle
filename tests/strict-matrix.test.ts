@@ -28,7 +28,7 @@ const TARGETS: StrictTarget[] = [
   { os: "mac", arch: "universal", ext: "dmg", runner: "macos-latest", artifact: "G1Wiggle-1.0.0-universal.dmg", buildCmd: "npx electron-builder --mac --universal -p never --config electron-builder.json" },
   { os: "win", arch: "x64", ext: "exe", runner: "windows-latest", artifact: "G1Wiggle-Setup-1.0.0-x64.exe", buildCmd: "npx electron-builder --win --x64 -p never --config electron-builder.json" },
   { os: "win", arch: "ia32", ext: "exe", runner: "windows-latest", artifact: "G1Wiggle-Setup-1.0.0-ia32.exe", buildCmd: "npx electron-builder --win --ia32 -p never --config electron-builder.json" },
-  { os: "linux", arch: "x64", ext: "AppImage", runner: "ubuntu-latest", artifact: "G1Wiggle-1.0.0-x64.AppImage", buildCmd: "npx electron-builder --linux --x64 -p never --config electron-builder.json" },
+  { os: "linux", arch: "x64", ext: "AppImage", runner: "ubuntu-latest", artifact: "G1Wiggle-1.0.0-x86_64.AppImage", buildCmd: "npx electron-builder --linux --x64 -p never --config electron-builder.json" },
   { os: "linux", arch: "arm64", ext: "AppImage", runner: "ubuntu-24.04-arm", artifact: "G1Wiggle-1.0.0-arm64.AppImage", buildCmd: "npx electron-builder --linux --arm64 -p never --config electron-builder.json" },
 ];
 
