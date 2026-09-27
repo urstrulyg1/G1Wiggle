@@ -73,7 +73,8 @@ describe("strict-matrix: exact seven targets", () => {
 
   it("uses architecture-aware artifact names", () => {
     for (const t of TARGETS) {
-      expect(t.artifact).toContain(t.arch);
+      const artifactArch = t.os === "linux" && t.arch === "x64" ? "x86_64" : t.arch;
+      expect(t.artifact).toContain(artifactArch);
       expect(t.artifact).toContain("1.0.0");
     }
   });
