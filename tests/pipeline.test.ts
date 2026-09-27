@@ -105,17 +105,6 @@ export const FULL_BUILD_MATRIX: BuildTarget[] = [
     description: "Windows 32-bit NSIS Installer",
   },
   {
-    os: "win",
-    arch: "arm64",
-    ext: "exe",
-    platformNode: "win32",
-    runner: "windows-latest",
-    artifactPattern: "G1Wiggle-Setup-${version}-${arch}.exe",
-    electronBuilderFlag: "--win --arm64",
-    supported: true,
-    description: "Windows ARM64 NSIS Installer",
-  },
-  {
     os: "linux",
     arch: "x64",
     ext: "AppImage",
