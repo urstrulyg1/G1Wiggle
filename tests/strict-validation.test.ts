@@ -33,7 +33,7 @@ function parseJson(p: string): any {
 const ARTIFACT_REGEX = {
   mac: /^G1Wiggle-\d+\.\d+\.\d+-(x64|arm64|universal)\.dmg$/,
   win: /^G1Wiggle-Setup-\d+\.\d+\.\d+-(x64|ia32)\.exe$/,
-  linux: /^G1Wiggle-\d+\.\d+\.\d+-(x64|arm64)\.AppImage$/,
+  linux: /^G1Wiggle-\d+\.\d+\.\d+-(x86_64|arm64)\.AppImage$/,
 };
 
 const ALL_OS = ["mac", "win", "linux"] as const;
