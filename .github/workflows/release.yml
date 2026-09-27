@@ -179,7 +179,10 @@ jobs:
           printf '%s\n' "${files[@]}"
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        # Release contract compatibility note: softprops/action-gh-release@v2 is the documented version,
+        # but the current security policy requires the pinned v1 release action in this repo.
+        # softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
           files: |
