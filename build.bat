@@ -6,7 +6,6 @@ setlocal enabledelayedexpansion
 :: Automatically detects host hardware architecture:
 ::   - 64-bit Windows PC: Builds Windows x64 .exe (NSIS Installer)
 ::   - 32-bit Windows PC: Builds Windows x86/ia32 .exe (NSIS Installer)
-::   - ARM64 Windows PC:  Builds Windows arm64 .exe (NSIS Installer)
 ::
 :: Usage (no flags required):
 ::   build.bat                  Detects host hardware and builds native binary
@@ -184,6 +183,7 @@ if errorlevel 1 goto build_failed
 echo !CYAN![5/6] Packaging desktop binaries with electron-builder...!NC!
 
 if /I "%TARGET%"=="win" (
+  if /I "%TARGET_ARCH%"=="arm64" (echo Windows ARM64 is not a supported G1Wiggle target.& goto build_failed)
   if /I "%BUILD_ALL_ARCH%"=="true" (
     echo   Packaging Windows EXEs for all architectures !DIM!^(64-bit x64 + 32-bit ia32/x86^)!NC!
     call npx electron-builder --win --x64 --ia32 -p never --config electron-builder.json
