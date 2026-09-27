@@ -680,25 +680,21 @@ describe("pipeline: CI/CD workflows for all OS/arch", () => {
     const buildWorkflow = path.join(workflowsDir, "build.yml");
     const releaseWorkflow = path.join(workflowsDir, "release.yml");
 
-    const anyExists = fs.existsSync(buildWorkflow) || fs.existsSync(releaseWorkflow);
-    if (!anyExists) {
-      console.warn("No workflow files yet — they will be created");
-      expect(true).toBe(true);
-      return;
-    }
+    expect(fs.existsSync(buildWorkflow)).toBe(true);
+    expect(fs.existsSync(releaseWorkflow)).toBe(true);
 
-    // If workflows exist, validate they contain matrix for all OS
+    // Validate the dedicated workflows contain the supported matrix.
     const content = [
       readFileSafe(buildWorkflow),
       readFileSafe(releaseWorkflow),
     ].join("\n");
 
-    if (content.trim().length > 0) {
-      expect(content).toMatch(/macos|darwin|mac/i);
-      expect(content).toMatch(/windows|win32|win/i);
-      expect(content).toMatch(/ubuntu|linux/i);
-      expect(content).toMatch(/x64|arm64|ia32/);
-    }
+    expect(content).toMatch(/macos|darwin|mac/i);
+    expect(content).toMatch(/windows|win32|win/i);
+    expect(content).toMatch(/ubuntu|linux/i);
+    expect(content).toMatch(/x64|arm64|ia32/);
+    expect(content).not.toContain("windows-11-arm");
+    expect(content).not.toContain("armv7l");
   });
 });
 
