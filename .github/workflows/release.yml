@@ -60,7 +60,7 @@ jobs:
           - { os: win, arch: x64, runner: windows-latest, command: "npx electron-builder --win --x64 -p never --config electron-builder.json", artifact: "G1Wiggle-Setup-*-x64.exe" }
           - { os: win, arch: ia32, runner: windows-latest, command: "npx electron-builder --win --ia32 -p never --config electron-builder.json", artifact: "G1Wiggle-Setup-*-ia32.exe" }
           - { os: win, arch: arm64, runner: windows-11-arm, command: "npx electron-builder --win --arm64 -p never --config electron-builder.json", artifact: "G1Wiggle-Setup-*-arm64.exe" }
-          - { os: linux, arch: x64, runner: ubuntu-latest, command: "npx electron-builder --linux --x64 -p never --config electron-builder.json", artifact: "G1Wiggle-*-x64.AppImage" }
+          - { os: linux, arch: x64, runner: ubuntu-latest, command: "npx electron-builder --linux --x64 -p never --config electron-builder.json", artifact: "G1Wiggle-*-x86_64.AppImage" }
           - { os: linux, arch: arm64, runner: ubuntu-24.04-arm, command: "npx electron-builder --linux --arm64 -p never --config electron-builder.json", artifact: "G1Wiggle-*-arm64.AppImage" }
           - { os: linux, arch: armv7l, runner: ubuntu-latest, command: "npx electron-builder --linux --armv7l -p never --config electron-builder.json", artifact: "G1Wiggle-*-armv7l.AppImage" }
     runs-on: ${{ matrix.runner }}
@@ -93,7 +93,7 @@ jobs:
             exit 1
           fi
           test -s "${files[0]}"
-          case "${files[0]}" in *"\$APP_VERSION"*) ;; *) echo "Artifact version mismatch"; exit 1 ;; esac
+          case "${files[0]}" in *"$APP_VERSION"*) ;; *) echo "Artifact version mismatch"; exit 1 ;; esac
       - name: Validate Linux AppImage
         if: ${{ matrix.os == 'linux' }}
         shell: bash
