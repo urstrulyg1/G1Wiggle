@@ -91,6 +91,9 @@ jobs:
             exit 1
           fi
           test -s "${files[0]}"
+          size=$(wc -c < "${files[0]}")
+          test "$size" -gt 0
+          echo "Artifact size: ${size} bytes"
           case "${files[0]}" in *"$APP_VERSION"*) ;; *) echo "Artifact version mismatch"; exit 1 ;; esac
       - name: Validate Linux AppImage
         if: ${{ matrix.os == 'linux' }}
