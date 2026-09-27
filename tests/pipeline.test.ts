@@ -729,7 +729,7 @@ describe("pipeline: end-to-end dry-run simulation", () => {
       "G1Wiggle-1.0.0-arm64.dmg",
       "G1Wiggle-Setup-1.0.0-x64.exe",
       "G1Wiggle-Setup-1.0.0-ia32.exe",
-      "G1Wiggle-1.0.0-x64.AppImage",
+      "G1Wiggle-1.0.0-x86_64.AppImage",
       "G1Wiggle-1.0.0-arm64.AppImage",
     ];
 
