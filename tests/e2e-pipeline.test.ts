@@ -24,7 +24,7 @@ const PRODUCTION_ARTIFACTS = [
   { os: "mac", arch: "arm64", file: "G1Wiggle-1.0.0-arm64.dmg", buildCmd: "npx electron-builder --mac --arm64 -p never" },
   { os: "win", arch: "x64", file: "G1Wiggle-Setup-1.0.0-x64.exe", buildCmd: "npx electron-builder --win --x64 -p never" },
   { os: "win", arch: "ia32", file: "G1Wiggle-Setup-1.0.0-ia32.exe", buildCmd: "npx electron-builder --win --ia32 -p never" },
-  { os: "linux", arch: "x64", file: "G1Wiggle-1.0.0-x64.AppImage", buildCmd: "npx electron-builder --linux --x64 -p never" },
+  { os: "linux", arch: "x64", file: "G1Wiggle-1.0.0-x86_64.AppImage", buildCmd: "npx electron-builder --linux --x64 -p never" },
   { os: "linux", arch: "arm64", file: "G1Wiggle-1.0.0-arm64.AppImage", buildCmd: "npx electron-builder --linux --arm64 -p never" },
 ];
 
