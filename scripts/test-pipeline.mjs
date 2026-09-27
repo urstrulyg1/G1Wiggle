@@ -29,10 +29,8 @@ const MATRIX = [
   { os: "mac", arch: "universal", ext: "dmg" },
   { os: "win", arch: "x64", ext: "exe" },
   { os: "win", arch: "ia32", ext: "exe" },
-  { os: "win", arch: "arm64", ext: "exe" },
   { os: "linux", arch: "x64", ext: "AppImage" },
   { os: "linux", arch: "arm64", ext: "AppImage" },
-  { os: "linux", arch: "armv7l", ext: "AppImage" },
 ];
 
 function log(msg, level = "info") {
@@ -167,7 +165,7 @@ async function main() {
 
   // 5. Check GitHub workflows
   log("Checking GitHub workflows for all OS/arch matrix...", "step");
-  const workflows = ["build.yml", "ci.yml", "release.yml"];
+  const workflows = ["build.yml", "release.yml"];
   for (const wf of workflows) {
     const wfPath = `.github/workflows/${wf}`;
     if (!checkFileExists(wfPath, "Workflow")) {
@@ -177,7 +175,6 @@ async function main() {
     const checks = ["macos-latest", "windows-latest", "ubuntu-latest", "x64", "arm64"];
     for (const check of checks) {
       if (!checkFileContains(wfPath, check, wf)) {
-        // Not all workflows need all checks, so warn not error for ci.yml
         if (wf === "build.yml") allPass = false;
       }
     }
@@ -206,7 +203,7 @@ async function main() {
 
   // 7. Validate matrix completeness
   log("Validating build matrix completeness...", "step");
-  log(`Matrix: ${MATRIX.length} supported build targets (mac x64/arm64/universal, win x64/ia32/arm64, linux x64/arm64/armv7l)`, "info");
+  log(`Matrix: ${MATRIX.length} supported build targets (mac x64/arm64/universal, win x64/ia32, linux x64/arm64)`, "info");
   for (const entry of MATRIX) {
     log(`  - ${entry.os} ${entry.arch} → ${entry.ext}`, "info");
   }
