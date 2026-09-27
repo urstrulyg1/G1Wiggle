@@ -172,7 +172,8 @@ export function generateBuildCommand(os: OSKind, arch: ArchKind | "all", allArch
 }
 
 export function expectedArtifactName(target: BuildTarget, version = "1.0.0"): string {
-  return target.artifactPattern.replace("${version}", version).replace("${arch}", target.arch).replace("${productName}", "G1Wiggle");
+  const artifactArch = target.os === "linux" && target.arch === "x64" ? "x86_64" : target.arch;
+  return target.artifactPattern.replace("${version}", version).replace("${arch}", artifactArch).replace("${productName}", "G1Wiggle");
 }
 
 // ---------------------------------------------------------------------------
