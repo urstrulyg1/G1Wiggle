@@ -35,10 +35,6 @@ describe("strict-build: vite build output strict", () => {
   });
 
   it("dist/index.html is singlefile: no external <script src> with http, only inline or relative", () => {
-    if (!fs.existsSync(indexPath)) {
-      expect(true).toBe(true);
-      return;
-    }
     const content = fs.readFileSync(indexPath, "utf8");
     // Singlefile should not have external http script src
     expect(content).not.toMatch(/<script[^>]+src=["']https?:\/\//);
@@ -47,10 +43,6 @@ describe("strict-build: vite build output strict", () => {
   });
 
   it("dist/index.html contains G1Wiggle or app root", () => {
-    if (!fs.existsSync(indexPath)) {
-      expect(true).toBe(true);
-      return;
-    }
     const content = fs.readFileSync(indexPath, "utf8");
     expect(content.length).toBeGreaterThan(1000);
     // Should contain root div or app title
