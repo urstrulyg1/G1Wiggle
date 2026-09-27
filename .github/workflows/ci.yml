@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 env:
-  GH_TOKEN: \${{ secrets.GITHUB_TOKEN }}
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   CSC_IDENTITY_AUTO_DISCOVERY: false
   CI_NODE_VERSION: "22.12.0"
 
@@ -25,7 +25,7 @@ jobs:
       - name: Setup Node.js 22
         uses: actions/setup-node@v7
         with:
-          node-version: \${{ env.CI_NODE_VERSION }}
+          node-version: ${{ env.CI_NODE_VERSION }}
           cache: npm
       - name: Verify Node and npm
         run: |
@@ -51,9 +51,9 @@ jobs:
           const c = JSON.parse(fs.readFileSync('electron-builder.json','utf8'));
           if (c.publish !== null) throw new Error('publish must remain null in CI');
           if (!c.appId || !c.productName) throw new Error('missing appId/productName');
-          if (!c.mac.artifactName.includes('\${arch}')) throw new Error('mac artifactName must include arch');
-          if (!c.nsis.artifactName.includes('\${arch}')) throw new Error('nsis artifactName must include arch');
-          if (!c.linux.artifactName.includes('\${arch}')) throw new Error('linux artifactName must include arch');
+          if (!c.mac.artifactName.includes('${arch}')) throw new Error('mac artifactName must include arch');
+          if (!c.nsis.artifactName.includes('${arch}')) throw new Error('nsis artifactName must include arch');
+          if (!c.linux.artifactName.includes('${arch}')) throw new Error('linux artifactName must include arch');
           if (c.nsis.oneClick !== false || c.nsis.perMachine !== false) throw new Error('unexpected NSIS installation mode');
           NODE
       - name: Run pipeline validator
