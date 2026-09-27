@@ -103,7 +103,7 @@ if ($entries.Count -eq 0) {
     } |
     Sort-Object @{ Expression = {
       $installLocation = [string](Get-PropertyValue $_ "InstallLocation")
-      if ($installLocation -and ([System.IO.Path]::GetFullPath($installLocation).TrimEnd('') -eq $requestedDir.TrimEnd(''))) { 0 } else { 1 }
+      if ($installLocation -and ([System.IO.Path]::GetFullPath($installLocation).TrimEnd('\') -eq $requestedDir.TrimEnd('\'))) { 0 } else { 1 }
     }} |
     Select-Object -First 1
 
@@ -112,7 +112,7 @@ if ($entries.Count -eq 0) {
   $installDir = [string](Get-PropertyValue $entry "InstallLocation")
   $displayIcon = [string](Get-PropertyValue $entry "DisplayIcon")
   if ([string]::IsNullOrWhiteSpace($installDir) -and $displayIcon) {
-    $iconPath = $displayIcon -replace ',s*-?d+$', ''
+    $iconPath = $displayIcon -replace ',\s*-?\d+$', ''
     $iconPath = $iconPath.Trim('"')
     if (Test-Path -LiteralPath $iconPath -PathType Leaf) {
       $installDir = Split-Path -Parent $iconPath
