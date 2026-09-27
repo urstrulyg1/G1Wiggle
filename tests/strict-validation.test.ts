@@ -82,7 +82,7 @@ describe("strict: package.json exact validation", () => {
       "electron:mac:x64": "electron-builder --mac --x64",
       "electron:mac:arm64": "electron-builder --mac --arm64",
       "electron:mac:universal": "electron-builder --mac --universal",
-      "electron:win": "electron-builder --win --x64 --ia32",
+      "electron:win": "electron-builder --win --x64 --ia32 --arm64",
       "electron:win:x64": "electron-builder --win --x64",
       "electron:win:ia32": "electron-builder --win --ia32",
       "electron:win:arm64": "electron-builder --win --arm64",
