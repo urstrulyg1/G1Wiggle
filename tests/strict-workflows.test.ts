@@ -88,7 +88,7 @@ describe("strict-workflows: build.yml strict validation", () => {
     expect(content).toContain("G1Wiggle-*-arm64.dmg");
     expect(content).toContain("G1Wiggle-Setup-*-x64.exe");
     expect(content).toContain("G1Wiggle-Setup-*-ia32.exe");
-    expect(content).toContain("G1Wiggle-*-x64.AppImage");
+    expect(content).toContain("G1Wiggle-*-x86_64.AppImage");
     expect(content).toContain("G1Wiggle-*-arm64.AppImage");
   });
 
