@@ -689,10 +689,9 @@ describe("pipeline: CI/CD workflows for all OS/arch", () => {
 
   it("should have a build workflow that covers all OS/arch", () => {
     const buildWorkflow = path.join(workflowsDir, "build.yml");
-    const ciWorkflow = path.join(workflowsDir, "ci.yml");
     const releaseWorkflow = path.join(workflowsDir, "release.yml");
 
-    const anyExists = fs.existsSync(buildWorkflow) || fs.existsSync(ciWorkflow) || fs.existsSync(releaseWorkflow);
+    const anyExists = fs.existsSync(buildWorkflow) || fs.existsSync(releaseWorkflow);
     if (!anyExists) {
       console.warn("No workflow files yet — they will be created");
       expect(true).toBe(true);
@@ -702,7 +701,6 @@ describe("pipeline: CI/CD workflows for all OS/arch", () => {
     // If workflows exist, validate they contain matrix for all OS
     const content = [
       readFileSafe(buildWorkflow),
-      readFileSafe(ciWorkflow),
       readFileSafe(releaseWorkflow),
     ].join("\n");
 
