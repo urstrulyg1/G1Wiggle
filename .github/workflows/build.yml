@@ -58,7 +58,7 @@ jobs:
     needs: test
     strategy:
       fail-fast: true
-      max-parallel: 1
+      max-parallel: 4
       matrix:
         include:
           - os: mac
