@@ -112,7 +112,6 @@ jobs:
         run: |
           artifact=(release/${{ matrix.artifact }})
           file "${artifact[0]}"
-          test -x "${artifact[0]}" || chmod +x "${artifact[0]}"
           case "${{ matrix.arch }}" in
             x64)
               file "${artifact[0]}" | grep -Eqi 'x86-64|x86_64|amd64'
@@ -125,7 +124,8 @@ jobs:
               file "${artifact[0]}" | grep -Eqi 'aarch64|arm64'
               chmod +x "${artifact[0]}"
               "${artifact[0]}" --appimage-version
-              "${artifact[0]}" --appimage-extract-and-run --version
+              command -v xvfb-run
+              xvfb-run --auto-servernum "${artifact[0]}" --appimage-extract-and-run --version
               ;;
             armv7l)
               file "${artifact[0]}" | grep -Eqi 'ARM'
