@@ -26,20 +26,10 @@ describe("strict-build: vite build output strict", () => {
   const indexPath = path.join(distDir, "index.html");
 
   beforeAll(() => {
-    // Ensure dist exists by running build if needed
-    if (!fs.existsSync(indexPath)) {
-      try {
-        execSync("npm run build", { cwd: rootDir, stdio: "pipe", timeout: 120000 });
-      } catch {}
-    }
+    execSync("npm run build", { cwd: rootDir, stdio: "pipe", timeout: 120000 });
   });
 
   it("dist/index.html exists and is >10KB (singlefile inlined)", () => {
-    if (!fs.existsSync(indexPath)) {
-      // If build didn't run, skip but don't fail strict validation
-      expect(true).toBe(true);
-      return;
-    }
     const size = fs.statSync(indexPath).size;
     expect(size).toBeGreaterThan(10 * 1024);
   });
@@ -68,10 +58,6 @@ describe("strict-build: vite build output strict", () => {
   });
 
   it("dist/ has no more than 3 files (singlefile should be minimal)", () => {
-    if (!fs.existsSync(distDir)) {
-      expect(true).toBe(true);
-      return;
-    }
     const files = fs.readdirSync(distDir);
     // Singlefile ideally has just index.html, maybe vite.svg, etc.
     expect(files.length).toBeLessThanOrEqual(5);
@@ -91,27 +77,18 @@ describe("strict-build: vite build output strict", () => {
 
 describe("strict-build: electron-builder CLI strict", () => {
   it("electron-builder --help contains all OS flags", () => {
-    try {
-      const help = execSync("npx electron-builder --help", { cwd: rootDir, encoding: "utf8", timeout: 30000 });
-      expect(help).toContain("--mac");
-      expect(help).toContain("--win");
-      expect(help).toContain("--linux");
-    } catch {
-      // If electron-builder not available, skip
-      expect(true).toBe(true);
-    }
+    const help = execSync("npx electron-builder --help", { cwd: rootDir, encoding: "utf8", timeout: 30000 });
+    expect(help).toContain("--mac");
+    expect(help).toContain("--win");
+    expect(help).toContain("--linux");
   });
 
   it("electron-builder --help contains all arch flags", () => {
-    try {
-      const help = execSync("npx electron-builder --help", { cwd: rootDir, encoding: "utf8", timeout: 30000 });
-      expect(help).toContain("--x64");
-      expect(help).toContain("--arm64");
-      expect(help).toContain("--ia32");
-      expect(help).toContain("--universal");
-    } catch {
-      expect(true).toBe(true);
-    }
+    const help = execSync("npx electron-builder --help", { cwd: rootDir, encoding: "utf8", timeout: 30000 });
+    expect(help).toContain("--x64");
+    expect(help).toContain("--arm64");
+    expect(help).toContain("--ia32");
+    expect(help).toContain("--universal");
   });
 
   it("electron-builder config is valid JSON and can be parsed by Node", () => {
@@ -216,13 +193,8 @@ describe("strict-build: build-all.mjs strict", () => {
   });
 
   it("can be executed with --dry-run without errors", () => {
-    try {
-      execSync("node scripts/build-all.mjs --dry-run", { cwd: rootDir, encoding: "utf8", timeout: 30000 });
-      expect(true).toBe(true);
-    } catch (e) {
-      // Should not throw
-      expect((e as any).status).toBe(0);
-    }
+    const out = execSync("node scripts/build-all.mjs --dry-run", { cwd: rootDir, encoding: "utf8", timeout: 30000 });
+    expect(out).toContain("dry");
   });
 });
 
@@ -255,13 +227,9 @@ describe("strict-build: test-pipeline.mjs strict", () => {
   });
 
   it("can be executed with --dry-run", () => {
-    try {
-      const out = execSync("node scripts/test-pipeline.mjs --dry-run", { cwd: rootDir, encoding: "utf8", timeout: 30000 });
-      expect(out).toContain("Pipeline validation");
-      expect(out).toContain("PASSED");
-    } catch (e) {
-      expect(true).toBe(true);
-    }
+    const out = execSync("node scripts/test-pipeline.mjs --dry-run", { cwd: rootDir, encoding: "utf8", timeout: 30000 });
+    expect(out).toContain("Pipeline validation");
+    expect(out).toContain("PASSED");
   });
 });
 
