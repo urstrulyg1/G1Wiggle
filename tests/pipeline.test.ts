@@ -575,8 +575,9 @@ describe("pipeline: build command generation for all OS/arch", () => {
       const key = `${target.os}-${name}`;
       expect(seen.has(key)).toBe(false);
       seen.add(key);
-      seen.add(name); // also ensure name itself contains arch
-      expect(name).toContain(target.arch);
+      seen.add(name); // also ensure name itself contains the real artifact architecture spelling
+      const artifactArch = target.os === "linux" && target.arch === "x64" ? "x86_64" : target.arch;
+      expect(name).toContain(artifactArch);
     }
   });
 });
