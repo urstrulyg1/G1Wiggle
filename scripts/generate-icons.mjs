@@ -25,6 +25,17 @@ const publicSvg = path.join(rootDir, "public", "icon.svg");
 const buildDir = path.join(rootDir, "build");
 const iconsDir = path.join(buildDir, "icons");
 const tmpDir = path.join(rootDir, ".icon-gen-tmp");
+const requiredAssets = [
+  path.join(buildDir, "icon-2048.png"),
+  path.join(buildDir, "icon.png"),
+  path.join(buildDir, "icon.icns"),
+  path.join(buildDir, "icon.ico"),
+  path.join(buildDir, "background.tiff"),
+  path.join(buildDir, "installerHeader.bmp"),
+  path.join(buildDir, "installerSidebar.bmp"),
+  path.join(buildDir, "uninstallerSidebar.bmp"),
+  path.join(iconsDir, "256x256.png"),
+];
 
 if (!fs.existsSync(buildDir)) {
   fs.mkdirSync(buildDir, { recursive: true });
@@ -45,6 +56,24 @@ if (fs.existsSync(tmpDir)) {
 fs.mkdirSync(tmpDir, { recursive: true });
 
 console.log("🎨 [G1Wiggle] Generating 4K Ultra-Clarity desktop branding & Linux icon suite...");
+
+const electronRuntime = path.join(
+  rootDir,
+  "node_modules",
+  "electron",
+  "dist",
+  process.platform === "win32" ? "electron.exe" : "electron",
+);
+const missingAssets = requiredAssets.filter((asset) => !fs.existsSync(asset));
+if (!fs.existsSync(electronRuntime)) {
+  if (missingAssets.length > 0) {
+    console.error(`Electron runtime is unavailable and required assets are missing: ${missingAssets.join(", ")}`);
+    process.exit(1);
+  }
+  console.warn("Electron runtime is unavailable; keeping the checked-in packaging assets.");
+  fs.rmSync(tmpDir, { recursive: true, force: true });
+  process.exit(0);
+}
 
 const svgSource = fs.readFileSync(publicSvg, "utf8");
 
