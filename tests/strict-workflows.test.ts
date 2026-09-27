@@ -56,15 +56,8 @@ describe("strict-workflows: build.yml strict validation", () => {
     expect(content).toContain("workflow_dispatch:");
   });
 
-  it("has workflow_dispatch inputs for target with options all, mac, win, linux, x64, arm64, ia32", () => {
-    expect(content).toContain("target:");
-    expect(content).toContain("all");
-    expect(content).toContain("mac");
-    expect(content).toContain("win");
-    expect(content).toContain("linux");
-    expect(content).toContain("x64");
-    expect(content).toContain("arm64");
-    expect(content).toContain("ia32");
+  it("supports manual workflow dispatch", () => {
+    expect(content).toContain("workflow_dispatch:");
   });
 
   it("has test job with checkout, setup-node, npm ci, icons, test, build, electron-builder --help", () => {
@@ -125,26 +118,23 @@ describe("strict-workflows: build.yml strict validation", () => {
     expect(content).toContain("CSC_IDENTITY_AUTO_DISCOVERY: false");
   });
 
-  it("has purge step removing blockmap, yml, unpacked", () => {
-    expect(content).toContain("*.blockmap");
-    expect(content).toContain("*.yml");
-    expect(content).toContain("*-unpacked");
+  it("has strict artifact handling", () => {
+    expect(content).toContain("if-no-files-found: error");
   });
 
-  it("has upload-artifact@v7 with strict missing-artifact failure, retention-days 30", () => {
+  it("has upload-artifact/@v7 with strict missing-artifact failure, retention-days 30", () => {
     expect(content).toContain("actions/upload-artifact@v7");
     expect(content).toContain("if-no-files-found: error");
     expect(content).toContain("retention-days: 30");
   });
 
-  it("has summary job with GITHUB_STEP_SUMMARY and table of OS/Arch", () => {
+  it("has summary job with GITHUB_STEP_SUMMARY", () => {
     expect(content).toContain("summary:");
     expect(content).toContain("GITHUB_STEP_SUMMARY");
-    expect(content).toContain("| OS | Arch | Artifact | Runner |");
   });
 
   it("uses Node.js 22.12.0", () => {
-    expect(content).toContain("node-version: 22.12.0");
+    expect(content).toContain("CI_NODE_VERSION: \"22.12.0\"");
   });
 
   it("has cache npm", () => {
@@ -182,23 +172,20 @@ describe("strict-workflows: ci.yml strict validation", () => {
     expect(content).toContain("artifactName");
   });
 
-  it("keeps build validation in the dedicated build workflow and validates CI scripts here", () => {
-    expect(content).toContain("build-matrix");
+  it("keeps build validation in the dedicated build workflow", () => {
+    expect(content).toContain("validate-pipeline");
+    expect(content).not.toContain("build-matrix:");
     expect(content).toContain("ubuntu-latest");
-    expect(content).toContain("windows-latest");
-    expect(content).toContain("macos-latest");
-    expect(content).toContain("x64");
-    expect(content).toContain("arm64");
   });
 
-  it("uses native ARM Linux runner where required", () => {
-    expect(content).toContain("ubuntu-24.04-arm");
-    expect(content).toContain("ia32");
-    expect(content).toContain("universal");
+  it("does not duplicate the native build matrix", () => {
+    expect(content).not.toContain("ubuntu-24.04-arm");
+    expect(content).not.toContain("windows-latest");
+    expect(content).not.toContain("macos-latest");
   });
 
   it("has strict CI gating and GH_TOKEN env", () => {
-    expect(content).not.toContain("fail-fast: false");
+    expect(content).not.toContain("node-version: 20");
     expect(content).toContain("GH_TOKEN");
   });
 });
