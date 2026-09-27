@@ -67,7 +67,93 @@ $entry = $entries |
 if ($null -eq $entry) { $entry = $entries | Select-Object -First 1 }
 
 $installDir = [string]$entry.InstallLocation
-if ([string]::IsNullOrWhiteSpace($installDir)) { Fail "Installer registry entry has no InstallLocation: $($entry.PSPath)" }
+if ([string]::IsNullOrWhiteSpace($installDir) -and $entry.DisplayIcon) {
+  $iconPath = ([string]$entry.DisplayIcon) -replace ',\s*-?\d+
+
+Write-Host "Detected installation directory: $installDir"
+Write-Host "Registry key: $($entry.PSPath)"
+Write-Host "DisplayName: $($entry.DisplayName)"
+Write-Host "DisplayVersion: $($entry.DisplayVersion)"
+Write-Host "DisplayIcon: $($entry.DisplayIcon)"
+Write-Host "Publisher: $($entry.Publisher)"
+Write-Host "UninstallString: $($entry.UninstallString)"
+
+if (!(Test-Path -LiteralPath $installDir -PathType Container)) { Fail "Detected installation directory does not exist: $installDir" }
+
+$expected = $ExpectedVersion -replace '^v',''
+$candidates = @(Get-ChildItem -LiteralPath $installDir -Recurse -File -Filter "*.exe" -ErrorAction SilentlyContinue | ForEach-Object {
+  $vi = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($_.FullName)
+  [pscustomobject]@{
+    Path = $_.FullName
+    Length = $_.Length
+    ProductName = $vi.ProductName
+    FileDescription = $vi.FileDescription
+    FileVersion = $vi.FileVersion
+    ProductVersion = $vi.ProductVersion
+  }
+} | Where-Object {
+  $_.ProductName -eq $ProductName -and
+  (($_.FileVersion -match [regex]::Escape($expected)) -or ($_.ProductVersion -match [regex]::Escape($expected)))
+})
+
+if ($candidates.Count -ne 1) {
+  Write-Host "Executable candidates discovered under the installer-reported directory:"
+  $candidates | Format-Table -AutoSize | Out-String | Write-Host
+  Write-Host "All installed files:"
+  Get-ChildItem -LiteralPath $installDir -Recurse -File -ErrorAction SilentlyContinue |
+    Select-Object FullName, Length, LastWriteTime | Format-Table -AutoSize | Out-String | Write-Host
+  Fail "Could not uniquely identify the installed application executable from product metadata/version."
+}
+
+$exePath = $candidates[0].Path
+Write-Host "Detected application executable: $exePath"
+Write-Host "Executable ProductName: $($candidates[0].ProductName)"
+Write-Host "Executable FileVersion: $($candidates[0].FileVersion)"
+Write-Host "Executable ProductVersion: $($candidates[0].ProductVersion)"
+
+$peArch = Get-PeArchitecture $exePath
+Write-Host "Detected PE architecture: $peArch"
+if ($peArch -ne $ExpectedArchitecture) { Fail "Architecture mismatch: expected $ExpectedArchitecture, installed executable is $peArch." }
+
+if ($entry.DisplayVersion -and $entry.DisplayVersion -ne $expected) {
+  Fail "Registry version mismatch: expected $expected, registry reports $($entry.DisplayVersion)."
+}
+
+$stdout = Join-Path $env:RUNNER_TEMP "g1wiggle-startup-$ExpectedArchitecture.stdout.log"
+$stderr = Join-Path $env:RUNNER_TEMP "g1wiggle-startup-$ExpectedArchitecture.stderr.log"
+Remove-Item $stdout,$stderr -Force -ErrorAction SilentlyContinue
+$versionProc = Start-Process -FilePath $exePath -ArgumentList "--version" -Wait -PassThru -NoNewWindow -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+Write-Host "Application --version exit code: $($versionProc.ExitCode)"
+if (Test-Path $stdout) { Write-Host "Application stdout:"; Get-Content $stdout | Write-Host }
+if (Test-Path $stderr) { Write-Host "Application stderr:"; Get-Content $stderr | Write-Host }
+if ($versionProc.ExitCode -ne 0) { Fail "Application startup smoke test failed with exit code $($versionProc.ExitCode)." }
+
+$running = @(Get-Process -Name "G1Wiggle" -ErrorAction SilentlyContinue | Where-Object {
+  try { $_.Path -eq $exePath } catch { $false }
+})
+if ($running.Count -gt 0) {
+  Write-Host "Application process remained after smoke test; terminating only the discovered G1Wiggle process(es)."
+  $running | Stop-Process -Force -ErrorAction Stop
+  Start-Sleep -Milliseconds 500
+}
+$stillRunning = @(Get-Process -Name "G1Wiggle" -ErrorAction SilentlyContinue | Where-Object {
+  try { $_.Path -eq $exePath } catch { $false }
+})
+if ($stillRunning.Count -gt 0) { Fail "G1Wiggle process did not terminate cleanly after smoke test." }
+
+Write-Host "Windows installation validation PASSED."
+,''
+  $iconPath = $iconPath.Trim('"')
+  if (Test-Path -LiteralPath $iconPath -PathType Leaf) {
+    $installDir = Split-Path -Parent $iconPath
+    Write-Host "InstallLocation missing; derived installation directory from DisplayIcon: $installDir"
+  }
+}
+if ([string]::IsNullOrWhiteSpace($installDir)) {
+  Write-Host "All matching uninstall registrations:"
+  $entries | Select-Object PSPath,DisplayName,DisplayVersion,InstallLocation,DisplayIcon,UninstallString | Format-List | Out-String | Write-Host
+  Fail "Installer registry entry has neither a usable InstallLocation nor a usable DisplayIcon."
+}
 $installDir = [System.IO.Path]::GetFullPath($installDir)
 
 Write-Host "Detected installation directory: $installDir"
