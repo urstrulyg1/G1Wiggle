@@ -82,46 +82,61 @@ if ($proc.ExitCode -ne 0) { Fail "NSIS installer failed with exit code $($proc.E
 Start-Sleep -Seconds 2
 
 $entries = @(Get-UninstallEntries)
-if ($entries.Count -eq 0) { Fail "No uninstall registry entry was found for '$ProductName'." }
+$entry = $null
+$installDir = $null
 
-Write-Host "Matching uninstall registry entries:"
-$entries | Select-Object PSPath,DisplayName,DisplayVersion,InstallLocation,DisplayIcon,Publisher,UninstallString | Format-List | Out-String | Write-Host
-
-$entry = $entries |
-  Where-Object {
-    $installLocation = [string](Get-PropertyValue $_ "InstallLocation")
-    $installLocation -and (Test-Path -LiteralPath $installLocation -PathType Container)
-  } |
-  Sort-Object @{ Expression = {
-    $installLocation = [string](Get-PropertyValue $_ "InstallLocation")
-    if ($installLocation -and ([System.IO.Path]::GetFullPath($installLocation).TrimEnd('\') -eq $requestedDir.TrimEnd('\'))) { 0 } else { 1 }
-  }} |
-  Select-Object -First 1
-if ($null -eq $entry) { $entry = $entries | Select-Object -First 1 }
-
-$installDir = [string](Get-PropertyValue $entry "InstallLocation")
-$displayIcon = [string](Get-PropertyValue $entry "DisplayIcon")
-if ([string]::IsNullOrWhiteSpace($installDir) -and $displayIcon) {
-  $iconPath = $displayIcon -replace ',\s*-?\d+$', ''
-  $iconPath = $iconPath.Trim('"')
-  if (Test-Path -LiteralPath $iconPath -PathType Leaf) {
-    $installDir = Split-Path -Parent $iconPath
-    Write-Host "InstallLocation missing; derived installation directory from DisplayIcon: $installDir"
+if ($entries.Count -eq 0) {
+  Write-Host "No uninstall registry entry found for '$ProductName'."
+  Write-Host "Falling back to the exact directory supplied to NSIS via /D after verifying that the installer created it."
+  if (!(Test-Path -LiteralPath $requestedDir -PathType Container)) {
+    Fail "NSIS reported success but the requested installation directory does not exist: $requestedDir"
   }
+  $installDir = [System.IO.Path]::GetFullPath($requestedDir)
+} else {
+  Write-Host "Matching uninstall registry entries:"
+  $entries | Select-Object PSPath,DisplayName,DisplayVersion,InstallLocation,DisplayIcon,Publisher,UninstallString | Format-List | Out-String | Write-Host
+
+  $entry = $entries |
+    Where-Object {
+      $installLocation = [string](Get-PropertyValue $_ "InstallLocation")
+      $installLocation -and (Test-Path -LiteralPath $installLocation -PathType Container)
+    } |
+    Sort-Object @{ Expression = {
+      $installLocation = [string](Get-PropertyValue $_ "InstallLocation")
+      if ($installLocation -and ([System.IO.Path]::GetFullPath($installLocation).TrimEnd('') -eq $requestedDir.TrimEnd(''))) { 0 } else { 1 }
+    }} |
+    Select-Object -First 1
+
+  if ($null -eq $entry) { $entry = $entries | Select-Object -First 1 }
+
+  $installDir = [string](Get-PropertyValue $entry "InstallLocation")
+  $displayIcon = [string](Get-PropertyValue $entry "DisplayIcon")
+  if ([string]::IsNullOrWhiteSpace($installDir) -and $displayIcon) {
+    $iconPath = $displayIcon -replace ',s*-?d+$', ''
+    $iconPath = $iconPath.Trim('"')
+    if (Test-Path -LiteralPath $iconPath -PathType Leaf) {
+      $installDir = Split-Path -Parent $iconPath
+      Write-Host "InstallLocation missing; derived installation directory from DisplayIcon: $installDir"
+    }
+  }
+
+  if ([string]::IsNullOrWhiteSpace($installDir)) {
+    Write-Host "All matching uninstall registrations:"
+    $entries | Format-List | Out-String | Write-Host
+    Fail "Installer metadata contains no usable InstallLocation or DisplayIcon."
+  }
+
+  $installDir = [System.IO.Path]::GetFullPath($installDir)
 }
-if ([string]::IsNullOrWhiteSpace($installDir)) {
-  Write-Host "All matching uninstall registrations:"
-  $entries | Format-List | Out-String | Write-Host
-  Fail "Installer metadata contains no usable InstallLocation or DisplayIcon."
-}
-$installDir = [System.IO.Path]::GetFullPath($installDir)
 
 Write-Host "Detected installation directory: $installDir"
-Write-Host "Registry key: $($entry.PSPath)"
-Write-Host "DisplayVersion: $(Get-PropertyValue $entry "DisplayVersion")"
-Write-Host "DisplayIcon: $(Get-PropertyValue $entry "DisplayIcon")"
-Write-Host "Publisher: $(Get-PropertyValue $entry "Publisher")"
-Write-Host "UninstallString: $(Get-PropertyValue $entry "UninstallString")"
+if ($null -ne $entry) {
+  Write-Host "Registry key: $($entry.PSPath)"
+  Write-Host "DisplayVersion: $(Get-PropertyValue $entry "DisplayVersion")"
+  Write-Host "DisplayIcon: $(Get-PropertyValue $entry "DisplayIcon")"
+  Write-Host "Publisher: $(Get-PropertyValue $entry "Publisher")"
+  Write-Host "UninstallString: $(Get-PropertyValue $entry "UninstallString")"
+}
 
 if (!(Test-Path -LiteralPath $installDir -PathType Container)) { Fail "Detected installation directory does not exist: $installDir" }
 
