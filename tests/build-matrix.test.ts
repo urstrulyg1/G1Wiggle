@@ -204,9 +204,10 @@ describe("build-matrix: exhaustive OS × Arch coverage", () => {
     expect(unique.size).toBe(artifacts.length);
   });
 
-  it("artifact names contain arch for disambiguation", () => {
+  it("artifact names use the real electron-builder architecture spelling", () => {
     for (const entry of MATRIX) {
-      expect(entry.artifact).toContain(entry.arch);
+      const artifactArch = entry.os === "linux" && entry.arch === "x64" ? "x86_64" : entry.arch;
+      expect(entry.artifact).toContain(artifactArch);
     }
   });
 });
@@ -305,7 +306,8 @@ describe("build-matrix: artifact path resolution", () => {
       // Path should be absolute and inside release/
       expect(path.isAbsolute(releasePath)).toBe(true);
       expect(releasePath).toContain("release");
-      expect(releasePath).toContain(entry.arch);
+      const artifactArch = entry.os === "linux" && entry.arch === "x64" ? "x86_64" : entry.arch;
+      expect(releasePath).toContain(artifactArch);
     }
   });
 
