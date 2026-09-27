@@ -21,6 +21,8 @@
 #   ./build.sh --arm64          # Forces ARM64 architecture
 #   ./build.sh --x64            # Forces x64 architecture
 #   ./build.sh --ia32           # Forces x86 (32-bit) architecture
+#   ./build.sh --armv7l         # Forces Linux ARMv7 architecture
+#   ./build.sh --universal      # Forces macOS universal architecture
 #   ./build.sh --clean          # Wipes previous dist/ and release/ before build
 # ==============================================================================
 
@@ -132,6 +134,14 @@ for arg in "$@"; do
       TARGET_ARCH="ia32"
       EXPLICIT_CONFIG=true
       ;;
+    --armv7l|--armv7)
+      TARGET_ARCH="armv7l"
+      EXPLICIT_CONFIG=true
+      ;;
+    --universal)
+      TARGET_ARCH="universal"
+      EXPLICIT_CONFIG=true
+      ;;
     --all-arch)
       BUILD_ALL_ARCH=true
       EXPLICIT_CONFIG=true
@@ -161,6 +171,8 @@ for arg in "$@"; do
       echo -e "  ${CYAN}--arm64${NC}          Force Apple Silicon / ARM64 build"
       echo -e "  ${CYAN}--x64${NC}            Force Intel / AMD 64-bit build"
       echo -e "  ${CYAN}--ia32, --x86${NC}    Force 32-bit x86 build"
+      echo -e "  ${CYAN}--armv7l${NC}         Force Linux ARMv7 build"
+      echo -e "  ${CYAN}--universal${NC}      Force macOS universal build"
       echo -e "  ${CYAN}--clean, -c${NC}      Clean dist/ and release/ directories before packaging"
       echo -e "  ${CYAN}--skip-tests${NC}     Skip running the Vitest automated test suite"
       echo -e "  ${CYAN}--help, -h${NC}       Show this help documentation"
@@ -233,8 +245,8 @@ case "$TARGET" in
     ;;
   win)
     if [ "$BUILD_ALL_ARCH" = true ]; then
-      echo -e "   → Packaging Windows EXEs for all architectures (64-bit x64 + 32-bit ia32/x86)..."
-      npx electron-builder --win --x64 --ia32 -p never --config electron-builder.json
+      echo -e "   → Packaging Windows EXEs for all architectures (x64 + arm64 + ia32/x86)..."
+      npx electron-builder --win --x64 --ia32 --arm64 -p never --config electron-builder.json
     else
       echo -e "   → Packaging Windows EXE specifically for detected hardware (${TARGET_ARCH})..."
       npx electron-builder --win "--${TARGET_ARCH}" -p never --config electron-builder.json
@@ -242,8 +254,8 @@ case "$TARGET" in
     ;;
   linux)
     if [ "$BUILD_ALL_ARCH" = true ]; then
-      echo -e "   → Packaging Linux packages for all architectures (x64 + arm64)..."
-      npx electron-builder --linux --x64 --arm64 -p never --config electron-builder.json
+      echo -e "   → Packaging Linux packages for all architectures (x64 + arm64 + armv7l)..."
+      npx electron-builder --linux --x64 --arm64 --armv7l -p never --config electron-builder.json
     else
       echo -e "   → Packaging Linux package specifically for detected hardware (${TARGET_ARCH})..."
       npx electron-builder --linux "--${TARGET_ARCH}" -p never --config electron-builder.json
