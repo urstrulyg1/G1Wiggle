@@ -171,7 +171,9 @@ describe("strict-matrix: GitHub Actions matrix", () => {
     for (const t of TARGETS) {
       const pattern = t.os === "win"
         ? `G1Wiggle-Setup-*-${t.arch}.exe`
-        : `G1Wiggle-*-${t.arch}.${t.ext}`;
+        : (t.os === "linux" && t.arch === "x64"
+          ? "G1Wiggle-*-x86_64.AppImage"
+          : `G1Wiggle-*-${t.arch}.${t.ext}`);
       expect(buildYml).toContain(pattern);
     }
   });
