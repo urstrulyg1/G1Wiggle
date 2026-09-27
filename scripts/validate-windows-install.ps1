@@ -154,6 +154,7 @@ $candidates = @(Get-ChildItem -LiteralPath $installDir -Recurse -File -Filter "*
   } |
   Where-Object {
     $_.ProductName -eq $ProductName -and
+    $_.FileDescription -eq $ProductName -and
     (($_.FileVersion -match [regex]::Escape($expected)) -or ($_.ProductVersion -match [regex]::Escape($expected)))
   })
 
@@ -190,7 +191,9 @@ $versionProc = Start-Process -FilePath $exePath -ArgumentList @("--version") -Wa
 Write-Host "Application --version exit code: $($versionProc.ExitCode)"
 if (Test-Path -LiteralPath $stdout) { Write-Host "Application stdout:"; Get-Content -LiteralPath $stdout | Write-Host }
 if (Test-Path -LiteralPath $stderr) { Write-Host "Application stderr:"; Get-Content -LiteralPath $stderr | Write-Host }
+$startupOutput = if (Test-Path -LiteralPath $stdout) { (Get-Content -Raw -LiteralPath $stdout).Trim() } else { "" }
 if ($versionProc.ExitCode -ne 0) { Fail "Installed application startup smoke test failed with exit code $($versionProc.ExitCode)." }
+if ($startupOutput -notmatch [regex]::Escape($expected)) { Fail "Installed application reported version '$startupOutput' but expected '$expected'." }
 
 $running = @(Get-Process -Name "G1Wiggle" -ErrorAction SilentlyContinue | Where-Object { try { $_.Path -eq $exePath } catch { $false } })
 if ($running.Count -gt 0) {
