@@ -86,10 +86,10 @@ describe("strict: package.json exact validation", () => {
       "electron:win:x64": "electron-builder --win --x64",
       "electron:win:ia32": "electron-builder --win --ia32",
       "electron:win:arm64": "electron-builder --win --arm64",
-      "electron:linux": "electron-builder --linux --x64 --arm64",
+      "electron:linux": "electron-builder --linux --x64 --arm64 --armv7l",
       "electron:linux:x64": "electron-builder --linux --x64",
       "electron:linux:arm64": "electron-builder --linux --arm64",
-      "electron:all": "electron-builder --mac --win --linux --x64 --arm64 --ia32",
+      "electron:all": "electron-builder --mac --win --linux --x64 --arm64 --ia32 --armv7l",
     };
     for (const [script, cmd] of Object.entries(expected)) {
       expect(pkg.scripts[script], `missing script ${script}`).toBeDefined();
