@@ -6,226 +6,181 @@ on:
   pull_request:
     branches: [main, master]
   workflow_dispatch:
-    inputs:
-      target:
-        description: Target OS or architecture to validate
-        required: true
-        default: all
-        type: choice
-        options: [all, mac, win, linux, x64, arm64, ia32, universal]
 
 permissions:
   contents: read
 
 env:
-  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  GH_TOKEN: \${{ secrets.GITHUB_TOKEN }}
   CSC_IDENTITY_AUTO_DISCOVERY: false
+  CI_NODE_VERSION: "22.12.0"
 
 jobs:
   test:
     name: Test and Validate
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - name: Checkout
         uses: actions/checkout@v7
-
-      - name: Setup Node.js 20
+      - name: Setup Node.js 22
         uses: actions/setup-node@v7
         with:
-          node-version: 20
+          node-version: \${{ env.CI_NODE_VERSION }}
           cache: npm
-
+      - name: Verify Node and npm
+        run: |
+          node --version
+          npm --version
+          node -e 'const [major,minor]=process.versions.node.split(".").map(Number); if (major !== 22 || minor < 12) process.exit(1)'
       - name: Install dependencies
         run: npm ci
-
       - name: Generate icons
         run: npm run icons
-
       - name: Run full test suite
-        run: npm run test
-
+        run: npm run test:all
       - name: Build web application
         run: npm run build
-
       - name: Validate Electron Builder
         run: npx electron-builder --help
-
-      - name: Validate pipeline
-        run: npm run pipeline:validate
+      - name: Validate pipeline contract
+        run: npm run pipeline:validate:verbose
 
   build-matrix:
-    name: Build ${{ matrix.os }} / ${{ matrix.arch }}
+    name: Build \${{ matrix.os }} / \${{ matrix.arch }}
     needs: test
     strategy:
-      fail-fast: true
-      max-parallel: 4
+      fail-fast: false
+      max-parallel: 9
       matrix:
         include:
-          - os: mac
-            arch: x64
-            runner: macos-15-intel
-            command: npx electron-builder --mac --x64 -p never --config electron-builder.json
-            artifact: G1Wiggle-*-x64.dmg
-          - os: mac
-            arch: arm64
-            runner: macos-latest
-            command: npx electron-builder --mac --arm64 -p never --config electron-builder.json
-            artifact: G1Wiggle-*-arm64.dmg
-          - os: mac
-            arch: universal
-            runner: macos-latest
-            command: npx electron-builder --mac --universal -p never --config electron-builder.json
-            artifact: G1Wiggle-*-universal.dmg
-          - os: win
-            arch: x64
-            runner: windows-latest
-            command: npx electron-builder --win --x64 -p never --config electron-builder.json
-            artifact: G1Wiggle-Setup-*-x64.exe
-          - os: win
-            arch: ia32
-            runner: windows-latest
-            command: npx electron-builder --win --ia32 -p never --config electron-builder.json
-            artifact: G1Wiggle-Setup-*-ia32.exe
-          - os: win
-            arch: arm64
-            runner: windows-11-arm
-            command: npx electron-builder --win --arm64 -p never --config electron-builder.json
-            artifact: G1Wiggle-Setup-*-arm64.exe
-          - os: linux
-            arch: x64
-            runner: ubuntu-latest
-            command: npx electron-builder --linux --x64 -p never --config electron-builder.json
-            artifact: G1Wiggle-*-x64.AppImage
-          - os: linux
-            arch: arm64
-            runner: ubuntu-24.04-arm
-            command: npx electron-builder --linux --arm64 -p never --config electron-builder.json
-            artifact: G1Wiggle-*-arm64.AppImage
-          - os: linux
-            arch: ia32
-            runner: ubuntu-latest
-            command: npx electron-builder --linux --ia32 -p never --config electron-builder.json
-            artifact: G1Wiggle-*-ia32.AppImage
-          - os: linux
-            arch: armv7l
-            runner: ubuntu-latest
-            command: npx electron-builder --linux --armv7l -p never --config electron-builder.json
-            artifact: G1Wiggle-*-armv7l.AppImage
-
-    runs-on: ${{ matrix.runner }}
+          - { os: mac, arch: x64, runner: macos-15-intel, command: "npx electron-builder --mac --x64 -p never --config electron-builder.json", artifact: "G1Wiggle-*-x64.dmg" }
+          - { os: mac, arch: arm64, runner: macos-latest, command: "npx electron-builder --mac --arm64 -p never --config electron-builder.json", artifact: "G1Wiggle-*-arm64.dmg" }
+          - { os: mac, arch: universal, runner: macos-latest, command: "npx electron-builder --mac --universal -p never --config electron-builder.json", artifact: "G1Wiggle-*-universal.dmg" }
+          - { os: win, arch: x64, runner: windows-latest, command: "npx electron-builder --win --x64 -p never --config electron-builder.json", artifact: "G1Wiggle-Setup-*-x64.exe" }
+          - { os: win, arch: ia32, runner: windows-latest, command: "npx electron-builder --win --ia32 -p never --config electron-builder.json", artifact: "G1Wiggle-Setup-*-ia32.exe" }
+          - { os: win, arch: arm64, runner: windows-11-arm, command: "npx electron-builder --win --arm64 -p never --config electron-builder.json", artifact: "G1Wiggle-Setup-*-arm64.exe" }
+          - { os: linux, arch: x64, runner: ubuntu-latest, command: "npx electron-builder --linux --x64 -p never --config electron-builder.json", artifact: "G1Wiggle-*-x64.AppImage" }
+          - { os: linux, arch: arm64, runner: ubuntu-24.04-arm, command: "npx electron-builder --linux --arm64 -p never --config electron-builder.json", artifact: "G1Wiggle-*-arm64.AppImage" }
+          - { os: linux, arch: armv7l, runner: ubuntu-latest, command: "npx electron-builder --linux --armv7l -p never --config electron-builder.json", artifact: "G1Wiggle-*-armv7l.AppImage" }
+    runs-on: \${{ matrix.runner }}
+    timeout-minutes: 45
     steps:
       - name: Checkout
         uses: actions/checkout@v7
-
-      - name: Setup Node.js 20
+      - name: Setup Node.js 22
         uses: actions/setup-node@v7
         with:
-          node-version: 20
+          node-version: \${{ env.CI_NODE_VERSION }}
           cache: npm
-
+      - name: Verify Node and npm
+        run: |
+          node --version
+          npm --version
+          node -e 'const [major,minor]=process.versions.node.split(".").map(Number); if (major !== 22 || minor < 12) process.exit(1)'
+      - name: Read package version
+        run: echo "APP_VERSION=$(node -p "require('./package.json').version")" >> "$GITHUB_ENV"
       - name: Install dependencies
         run: npm ci
-
       - name: Generate icons
         run: npm run icons
-
       - name: Build web application
         run: npm run build
-
       - name: Package application
         shell: bash
         run: |
           rm -rf release
-          ${{ matrix.command }}
-
-      - name: Validate Linux AppImage
-        if: ${{ startsWith(matrix.os, 'linux') }}
+          \${{ matrix.command }}
+      - name: Validate exact artifact
         shell: bash
         run: |
           shopt -s nullglob
-          files=(release/${{ matrix.artifact }})
-          test ${#files[@]} -eq 1
-          artifact="${files[0]}"
-          chmod +x "$artifact"
-          "$artifact" --appimage-version
-          "$artifact" --appimage-extract-and-run --version
-
-      - name: Validate macOS DMG installation
-        if: ${{ matrix.os == 'mac' }}
-        shell: bash
-        run: |
-          shopt -s nullglob
-          files=(release/${{ matrix.artifact }})
-          test ${#files[@]} -eq 1
-          mount_point="$RUNNER_TEMP/g1wiggle-dmg"
-          mkdir -p "$mount_point"
-          hdiutil attach "${files[0]}" -mountpoint "$mount_point" -nobrowse -quiet
-          test -d "$mount_point/G1Wiggle.app"
-          test -x "$mount_point/G1Wiggle.app/Contents/MacOS/G1Wiggle"
-          "$mount_point/G1Wiggle.app/Contents/MacOS/G1Wiggle" --version
-          hdiutil detach "$mount_point" -quiet
-
-      - name: Validate Windows NSIS installation
-        if: ${{ matrix.os == 'win' }}
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $files = @(Get-ChildItem -Path 'release' -Filter '${{ matrix.artifact }}' -File)
-          if ($files.Count -ne 1) { throw "Expected exactly one installer, found $($files.Count)" }
-          $target = Join-Path $env:RUNNER_TEMP 'G1Wiggle-install'
-          Remove-Item -Recurse -Force $target -ErrorAction SilentlyContinue
-          Start-Process -FilePath $files[0].FullName -ArgumentList '/S',('/D='+$target) -Wait
-          $exe = Join-Path $target 'G1Wiggle.exe'
-          if (!(Test-Path $exe)) { throw "Installed G1Wiggle.exe not found" }
-          & $exe --version
-
-      - name: Purge intermediate files
-        shell: bash
-        run: |
-          rm -f release/*.blockmap release/*.yml release/*.yaml release/*.zip || true
-          rm -rf release/*-unpacked release/mac-* release/win-* release/linux-* || true
-
-      - name: Verify expected artifact
-        shell: bash
-        run: |
-          shopt -s nullglob
-          files=(release/${{ matrix.artifact }})
-          if [ ${#files[@]} -ne 1 ]; then
-            echo "Expected artifact not found: ${{ matrix.artifact }}"
-            ls -la release || true
+          files=(release/\${{ matrix.artifact }})
+          if [ \${#files[@]} -ne 1 ]; then
+            echo "Expected exactly one artifact matching \${{ matrix.artifact }}"
+            find release -maxdepth 2 -type f -printf '%p %s bytes\n'
             exit 1
           fi
-          printf '%s\n' "${files[@]}"
-
-      - name: Upload artifact
+          test -s "\${files[0]}"
+          case "\${files[0]}" in *"\$APP_VERSION"*) ;; *) echo "Artifact version mismatch: \${files[0]}"; exit 1 ;; esac
+          echo "Artifact: \${files[0]}"
+          stat -c "Artifact size: %s bytes" "\${files[0]}"
+      - name: Validate Linux AppImage
+        if: \${{ matrix.os == 'linux' }}
+        shell: bash
+        run: |
+          artifact=(release/\${{ matrix.artifact }})
+          file "\${artifact[0]}"
+          case "\${{ matrix.arch }}" in
+            x64)
+              file "\${artifact[0]}" | grep -Eqi 'x86-64|x86_64|amd64'
+              chmod +x "\${artifact[0]}"
+              "\${artifact[0]}" --appimage-version
+              "\${artifact[0]}" --appimage-extract-and-run --version
+              ;;
+            arm64)
+              file "\${artifact[0]}" | grep -Eqi 'aarch64|arm64'
+              chmod +x "\${artifact[0]}"
+              "\${artifact[0]}" --appimage-version
+              "\${artifact[0]}" --appimage-extract-and-run --version
+              ;;
+            armv7l)
+              file "\${artifact[0]}" | grep -Eqi 'ARM'
+              echo "armv7l architecture validated; runtime execution is not possible on the x64 hosted runner."
+              ;;
+            *) exit 1 ;;
+          esac
+      - name: Validate macOS DMG
+        if: \${{ matrix.os == 'mac' }}
+        shell: bash
+        run: |
+          artifact=(release/\${{ matrix.artifact }})
+          mount_point="$RUNNER_TEMP/g1wiggle-dmg"
+          mkdir -p "$mount_point"
+          hdiutil attach "\${artifact[0]}" -mountpoint "$mount_point" -nobrowse -quiet
+          test -d "$mount_point/G1Wiggle.app"
+          test -x "$mount_point/G1Wiggle.app/Contents/MacOS/G1Wiggle"
+          info=$(lipo -archs "$mount_point/G1Wiggle.app/Contents/MacOS/G1Wiggle")
+          echo "App architectures: $info"
+          case "\${{ matrix.arch }}" in
+            x64) echo "$info" | grep -qw x86_64 ;;
+            arm64) echo "$info" | grep -qw arm64 ;;
+            universal) echo "$info" | grep -qw x86_64 && echo "$info" | grep -qw arm64 ;;
+            *) exit 1 ;;
+          esac
+          plist_version=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$mount_point/G1Wiggle.app/Contents/Info.plist")
+          test "$plist_version" = "$APP_VERSION"
+          "$mount_point/G1Wiggle.app/Contents/MacOS/G1Wiggle" --version
+          hdiutil detach "$mount_point" -quiet
+      - name: Validate Windows NSIS installation
+        if: \${{ matrix.os == 'win' }}
+        shell: pwsh
+        run: |
+          $installer = @(Get-ChildItem -Path 'release' -Filter '\${{ matrix.artifact }}' -File)
+          if ($installer.Count -ne 1) { throw "Expected exactly one installer, found $($installer.Count)" }
+          & "$env:GITHUB_WORKSPACE/scripts/validate-windows-install.ps1" -InstallerPath $installer[0].FullName -ExpectedArchitecture '\${{ matrix.arch }}' -ExpectedVersion "$env:APP_VERSION" -ProductName 'G1Wiggle'
+      - name: Upload validated artifact
         uses: actions/upload-artifact@v7
         with:
-          name: G1Wiggle-${{ matrix.os }}-${{ matrix.arch }}
-          path: release/${{ matrix.artifact }}
+          name: G1Wiggle-\${{ matrix.os }}-\${{ matrix.arch }}
+          path: release/\${{ matrix.artifact }}
           if-no-files-found: error
           retention-days: 30
 
   summary:
     name: Build Summary
-    needs: [build-matrix]
+    if: \${{ always() }}
+    needs: [test, build-matrix]
     runs-on: ubuntu-latest
     steps:
       - name: Write summary
-        shell: bash
         run: |
+          echo "Test job: \${{ needs.test.result }}"
+          echo "Build matrix: \${{ needs.build-matrix.result }}"
           {
             echo "## G1Wiggle Build Matrix"
-            echo
-            echo "| OS | Arch | Artifact | Runner |"
-            echo "| --- | --- | --- | --- |"
-            echo "| macOS | x64 | G1Wiggle-*-x64.dmg | macos-latest |"
-            echo "| macOS | arm64 | G1Wiggle-*-arm64.dmg | macos-latest |"
-            echo "| macOS | universal | G1Wiggle-*-universal.dmg | macos-latest |"
-            echo "| Windows | x64 | G1Wiggle-Setup-*-x64.exe | windows-latest |"
-            echo "| Windows | ia32 | G1Wiggle-Setup-*-ia32.exe | windows-latest |"
-            echo "| Windows | arm64 | G1Wiggle-Setup-*-arm64.exe | windows-latest |"
-            echo "| Linux | x64 | G1Wiggle-*-x64.AppImage | ubuntu-latest |"
-            echo "| Linux | arm64 | G1Wiggle-*-arm64.AppImage | ubuntu-24.04-arm |"
-            echo "| Linux | ia32 | G1Wiggle-*-ia32.AppImage | ubuntu-latest |"
-            echo "| Linux | armv7l | G1Wiggle-*-armv7l.AppImage | ubuntu-latest |"
+            echo "| Stage | Status |"
+            echo "| --- | --- |"
+            echo "| Test and Validate | \${{ needs.test.result }} |"
+            echo "| OS/architecture matrix | \${{ needs.build-matrix.result }} |"
           } >> "$GITHUB_STEP_SUMMARY"
