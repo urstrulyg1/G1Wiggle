@@ -176,8 +176,10 @@ Write-Host "ProductVersion: $($candidates[0].ProductVersion)"
 $peArchitecture = Get-PeArchitecture $exePath
 Write-Host "Detected PE architecture: $peArchitecture"
 if ($peArchitecture -ne $ExpectedArchitecture) { Fail "Architecture mismatch: expected $ExpectedArchitecture, detected $peArchitecture." }
-$registryVersion = [string](Get-PropertyValue $entry "DisplayVersion")
-if ($registryVersion -and $registryVersion -ne $expected) { Fail "Registry version mismatch: expected $expected, registry reports $registryVersion." }
+if ($null -ne $entry) {
+  $registryVersion = [string](Get-PropertyValue $entry "DisplayVersion")
+  if ($registryVersion -and $registryVersion -ne $expected) { Fail "Registry version mismatch: expected $expected, registry reports $registryVersion." }
+}
 
 $stdout = Join-Path $env:RUNNER_TEMP ("g1wiggle-startup-$ExpectedArchitecture.stdout.log")
 $stderr = Join-Path $env:RUNNER_TEMP ("g1wiggle-startup-$ExpectedArchitecture.stderr.log")
