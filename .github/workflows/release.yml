@@ -83,13 +83,17 @@ jobs:
         timeout-minutes: 10
         shell: bash
         run: |
+          label="Linux install check (${{ matrix.arch }})"
+          fail() { echo "::error title=$label::$(printf '%s' "$1" | tail -c 3000 | tr '\n' '|')"; exit 1; }
           shopt -s nullglob
           files=(release/${{ matrix.artifact }})
-          test ${#files[@]} -eq 1
-          chmod +x "${files[0]}"
-          command -v xvfb-run >/dev/null || { sudo apt-get update && sudo apt-get install -y xvfb; }
-          "${files[0]}" --appimage-version
-          xvfb-run -a "${files[0]}" --appimage-extract-and-run --no-sandbox --version
+          [ ${#files[@]} -eq 1 ] || fail "Expected exactly one AppImage, found ${#files[@]}: $(ls release)"
+          artifact="${files[0]}"
+          chmod +x "$artifact"
+          command -v xvfb-run >/dev/null || { sudo apt-get update && sudo apt-get install -y xvfb; } || fail "Could not install xvfb"
+          out=$("$artifact" --appimage-version 2>&1) || fail "AppImage runtime check failed: $out"
+          out=$(xvfb-run -a "$artifact" --appimage-extract-and-run --no-sandbox --version 2>&1) || fail "G1Wiggle --version failed: $out"
+          echo "::notice title=$label::G1Wiggle --version -> $(printf '%s' "$out" | tail -n 1)"
       - name: Install/smoke-test macOS
         if: ${{ matrix.os == 'mac' }}
         timeout-minutes: 10
@@ -110,15 +114,35 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          $files = @(Get-ChildItem -Path 'release' -Filter '${{ matrix.artifact }}' -File)
-          if ($files.Count -ne 1) { throw "Expected one installer, found $($files.Count)" }
-          $target = Join-Path $env:RUNNER_TEMP 'G1Wiggle-install'
-          Remove-Item -Recurse -Force $target -ErrorAction SilentlyContinue
-          Start-Process -FilePath $files[0].FullName -ArgumentList '/S',('/D='+$target) -Wait
-          $exe = Join-Path $target 'G1Wiggle.exe'
-          if (!(Test-Path $exe)) { throw "Installed executable not found" }
-          $proc = Start-Process -FilePath $exe -ArgumentList '--version' -Wait -PassThru
-          if ($proc.ExitCode -ne 0) { throw "G1Wiggle.exe --version exited with $($proc.ExitCode)" }
+          $label = 'Windows install check (${{ matrix.arch }})'
+          function Fail([string]$msg) {
+            $msg = ($msg -replace '%', '%25') -replace "`r?`n", ' | '
+            Write-Output "::error title=${label}::$msg"
+            exit 1
+          }
+          try {
+            $files = @(Get-ChildItem -Path 'release' -Filter '${{ matrix.artifact }}' -File)
+            if ($files.Count -ne 1) { Fail "Expected exactly one installer, found $($files.Count): $((Get-ChildItem release -Name) -join ', ')" }
+            $target = Join-Path $env:RUNNER_TEMP 'G1Wiggle-install'
+            Remove-Item -Recurse -Force $target -ErrorAction SilentlyContinue
+            $installer = Start-Process -FilePath $files[0].FullName -ArgumentList '/S',('/D='+$target) -Wait -PassThru
+            if ($installer.ExitCode -ne 0) { Fail "Installer $($files[0].Name) exited with code $($installer.ExitCode)" }
+            $exe = Join-Path $target 'G1Wiggle.exe'
+            if (!(Test-Path $exe)) {
+              $listing = if (Test-Path $target) { (Get-ChildItem $target -Name) -join ', ' } else { '<install dir missing>' }
+              $elsewhere = (@(Get-ChildItem -Path "$env:LOCALAPPDATA\Programs" -Filter 'G1Wiggle.exe' -Recurse -ErrorAction SilentlyContinue | ForEach-Object FullName) -join ', ')
+              Fail "G1Wiggle.exe not found in $target. Contents: $listing. Found elsewhere: $elsewhere"
+            }
+            $stdout = Join-Path $env:RUNNER_TEMP 'g1wiggle-version.out'
+            $stderr = Join-Path $env:RUNNER_TEMP 'g1wiggle-version.err'
+            $proc = Start-Process -FilePath $exe -ArgumentList '--version' -Wait -PassThru -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+            $outText = (Get-Content $stdout -Raw -ErrorAction SilentlyContinue)
+            $errText = (Get-Content $stderr -Raw -ErrorAction SilentlyContinue)
+            if ($proc.ExitCode -ne 0) { Fail "G1Wiggle.exe --version exited with code $($proc.ExitCode). stdout: $outText stderr: $errText" }
+            Write-Output "::notice title=${label}::G1Wiggle.exe --version -> $("$outText".Trim())"
+          } catch {
+            Fail "$($_.Exception.Message)"
+          }
       - name: Purge intermediates
         shell: bash
         run: |
