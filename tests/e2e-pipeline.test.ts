@@ -38,26 +38,11 @@ describe("e2e-pipeline: vite build produces universal web bundle for all OS/arch
   });
 
   it("npm run build creates dist/ with index.html (shared across all OS/arch)", () => {
-    // Run vite build if dist doesn't exist, or validate existing dist
-    try {
-      if (!fs.existsSync(path.join(distDir, "index.html"))) {
-        execSync("npm run build", { cwd: rootDir, stdio: "pipe", timeout: 120000 });
-      }
-      expect(fs.existsSync(path.join(distDir, "index.html"))).toBe(true);
-      const index = fs.readFileSync(path.join(distDir, "index.html"), "utf8");
-      expect(index.length).toBeGreaterThan(1000);
-      // Singlefile build should inline JS
-      expect(index).toContain("<script");
-    } catch (e) {
-      // A failed production build is a real test failure; never convert it into a pass.
-      // The important thing is that the build pipeline logic is validated elsewhere
-      if (fs.existsSync(distDir)) {
-        expect(fs.existsSync(distDir)).toBe(true);
-      } else {
-        console.warn("Vite build skipped in this environment:", (e as Error).message);
-        expect(true).toBe(true);
-      }
-    }
+    execSync("npm run build", { cwd: rootDir, stdio: "pipe", timeout: 120000 });
+    expect(fs.existsSync(path.join(distDir, "index.html"))).toBe(true);
+    const index = fs.readFileSync(path.join(distDir, "index.html"), "utf8");
+    expect(index.length).toBeGreaterThan(1000);
+    expect(index).toContain("<script");
   });
 
   it("dist is self-contained (singlefile) for desktop embedding on all OS", () => {
