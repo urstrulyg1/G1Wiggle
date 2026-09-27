@@ -222,9 +222,9 @@ describe("strict-security: GitHub workflows", () => {
     }
   });
 
-  it("release workflow uses softprops/action-gh-release@v1 pinned version", () => {
+  it("release workflow uses softprops/action-gh-release@v2", () => {
     const content = read(".github/workflows/release.yml");
-    expect(content).toContain("softprops/action-gh-release@v1");
+    expect(content).toContain("softprops/action-gh-release@v2");
   });
 
   it("workflows do not expose secrets in logs (no echo of secrets)", () => {
