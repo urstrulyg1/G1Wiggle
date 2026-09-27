@@ -3,9 +3,11 @@ name: All Apps, All OS, All Arch
 on:
   push:
     branches: [main, master, "arena/**"]
-  pull_request:
-    branches: [main, master]
-  workflow_dispatch:
+
+concurrency:
+  group: g1wiggle-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 
 permissions:
   contents: read
@@ -51,7 +53,7 @@ jobs:
     needs: test
     strategy:
       fail-fast: false
-      max-parallel: 9
+      max-parallel: 7
       matrix:
         include:
           - { os: mac, arch: x64, runner: macos-15-intel, command: "npx electron-builder --mac --x64 -p never --config electron-builder.json", artifact: "G1Wiggle-*-x64.dmg" }
@@ -59,10 +61,8 @@ jobs:
           - { os: mac, arch: universal, runner: macos-latest, command: "npx electron-builder --mac --universal -p never --config electron-builder.json", artifact: "G1Wiggle-*-universal.dmg" }
           - { os: win, arch: x64, runner: windows-latest, command: "npx electron-builder --win --x64 -p never --config electron-builder.json", artifact: "G1Wiggle-Setup-*-x64.exe" }
           - { os: win, arch: ia32, runner: windows-latest, command: "npx electron-builder --win --ia32 -p never --config electron-builder.json", artifact: "G1Wiggle-Setup-*-ia32.exe" }
-          - { os: win, arch: arm64, runner: windows-11-arm, command: "npx electron-builder --win --arm64 -p never --config electron-builder.json", artifact: "G1Wiggle-Setup-*-arm64.exe" }
           - { os: linux, arch: x64, runner: ubuntu-latest, command: "npx electron-builder --linux --x64 -p never --config electron-builder.json", artifact: "G1Wiggle-*-x86_64.AppImage" }
           - { os: linux, arch: arm64, runner: ubuntu-24.04-arm, command: "npx electron-builder --linux --arm64 -p never --config electron-builder.json", artifact: "G1Wiggle-*-arm64.AppImage" }
-          - { os: linux, arch: armv7l, runner: ubuntu-latest, command: "npx electron-builder --linux --armv7l -p never --config electron-builder.json", artifact: "G1Wiggle-*-armv7l.AppImage" }
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 45
     steps:
