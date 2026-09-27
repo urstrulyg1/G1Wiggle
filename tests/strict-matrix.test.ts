@@ -298,7 +298,7 @@ describe("strict-matrix: GitHub workflows matrix completeness", () => {
       "G1Wiggle-*-arm64.dmg",
       "G1Wiggle-Setup-*-x64.exe",
       "G1Wiggle-Setup-*-ia32.exe",
-      "G1Wiggle-*-x64.AppImage",
+      "G1Wiggle-*-x86_64.AppImage",
       "G1Wiggle-*-arm64.AppImage",
     ];
     for (const artifact of primaryArtifacts) {
