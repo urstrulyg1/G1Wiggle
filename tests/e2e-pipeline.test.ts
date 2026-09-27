@@ -198,7 +198,8 @@ describe("e2e-pipeline: full pipeline simulation creating all apps", () => {
     for (const artifact of PRODUCTION_ARTIFACTS) {
       const expectedExt = artifact.os === "mac" ? "dmg" : artifact.os === "win" ? "exe" : "AppImage";
       expect(artifact.file).toContain(expectedExt);
-      expect(artifact.file).toContain(artifact.arch);
+      const artifactArch = artifact.os === "linux" && artifact.arch === "x64" ? "x86_64" : artifact.arch;
+      expect(artifact.file).toContain(artifactArch);
     }
   });
 
