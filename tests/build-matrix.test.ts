@@ -98,7 +98,7 @@ const MATRIX: MatrixEntry[] = [
     arch: "x64",
     ext: "AppImage",
     target: "AppImage",
-    artifact: "G1Wiggle-1.0.0-x64.AppImage",
+    artifact: "G1Wiggle-1.0.0-x86_64.AppImage",
     runner: "ubuntu-latest",
     supported: true,
     priority: "primary",
@@ -501,7 +501,7 @@ describe("build-matrix: end-to-end pipeline validation", () => {
     expect(artifacts).toContain("G1Wiggle-1.0.0-arm64.dmg");
     expect(artifacts).toContain("G1Wiggle-Setup-1.0.0-x64.exe");
     expect(artifacts).toContain("G1Wiggle-Setup-1.0.0-ia32.exe");
-    expect(artifacts).toContain("G1Wiggle-1.0.0-x64.AppImage");
+    expect(artifacts).toContain("G1Wiggle-1.0.0-x86_64.AppImage");
     expect(artifacts).toContain("G1Wiggle-1.0.0-arm64.AppImage");
     // At least 6 artifacts
     expect(artifacts.length).toBeGreaterThanOrEqual(6);
