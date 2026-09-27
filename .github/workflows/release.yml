@@ -101,7 +101,6 @@ jobs:
           case "${{ matrix.arch }}" in
             x64) file "${artifact[0]}" | grep -Eqi 'x86-64|x86_64|amd64'; chmod +x "${artifact[0]}"; "${artifact[0]}" --appimage-version; command -v xvfb-run; xvfb-run --auto-servernum "${artifact[0]}" --appimage-extract-and-run --version ;;
             arm64) file "${artifact[0]}" | grep -Eqi 'aarch64|arm64'; chmod +x "${artifact[0]}"; "${artifact[0]}" --appimage-version; command -v xvfb-run; xvfb-run --auto-servernum "${artifact[0]}" --appimage-extract-and-run --version ;;
-            armv7l) file "${artifact[0]}" | grep -Eqi 'ARM';;
             *) exit 1 ;;
           esac
       - name: Validate macOS DMG
