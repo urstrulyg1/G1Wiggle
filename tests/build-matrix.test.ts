@@ -144,10 +144,10 @@ const MATRIX: MatrixEntry[] = [
     ext: "AppImage",
     target: "AppImage",
     artifact: "G1Wiggle-1.0.0-armv7l.AppImage",
-    runner: "ubuntu-24.04-arm",
-    supported: false,
-    priority: "legacy",
-    notes: "ARMv7 32-bit, Raspberry Pi 3 and older",
+    runner: "ubuntu-latest",
+    supported: true,
+    priority: "secondary",
+    notes: "ARMv7 32-bit; Electron 43 is the final supported Electron line for this target",
   },
 ];
 
@@ -183,8 +183,8 @@ function buildCommandAll(): string {
 // ---------------------------------------------------------------------------
 
 describe("build-matrix: exhaustive OS × Arch coverage", () => {
-  it("defines at least 10 total combinations (including legacy)", () => {
-    expect(MATRIX.length).toBeGreaterThanOrEqual(10);
+  it("defines the complete supported and legacy matrix", () => {
+    expect(MATRIX.length).toBe(10);
   });
 
   it("has 6 primary production targets", () => {
@@ -264,7 +264,7 @@ describe("build-matrix: electron-builder config per target", () => {
     expect(config.nsis.artifactName).toContain("${arch}");
   });
 
-  it("linux config supports x64, arm64, ia32, armv7l via CLI flags", () => {
+  it("linux config uses arch-aware artifacts for supported targets", () => {
     expect(config.linux.artifactName).toContain("${arch}");
   });
 
@@ -487,7 +487,7 @@ describe("build-matrix: package.json scripts matrix", () => {
     expect(pkg.scripts["electron:linux"]).toContain("arm64");
   });
 
-  it("electron:all covers all 6 primary artifacts", () => {
+  it("electron:all covers the primary production architectures", () => {
     const all = pkg.scripts["electron:all"];
     expect(all).toContain("--mac");
     expect(all).toContain("--win");
