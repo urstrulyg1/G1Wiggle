@@ -664,16 +664,10 @@ describe("pipeline: electron main process cross-platform support", () => {
 
 describe("pipeline: CI/CD workflows for all OS/arch", () => {
   it("creates .github/workflows directory", () => {
-    // The test itself ensures the directory exists — if not, we create expectation
-    // In pipeline tests, we validate that workflows SHOULD exist
-    const exists = fs.existsSync(workflowsDir);
-    if (!exists) {
-      // For test purposes, we allow missing but warn — actual workflow files are created by this task
-      console.warn("Workflows dir missing — will be created by pipeline setup");
-    }
-    // After setup, workflows should exist
-    // We don't fail here if missing during first run; the later checks will
-    expect(true).toBe(true);
+    expect(fs.existsSync(workflowsDir)).toBe(true);
+    expect(fs.existsSync(path.join(workflowsDir, "build.yml"))).toBe(true);
+    expect(fs.existsSync(path.join(workflowsDir, "release.yml"))).toBe(true);
+    expect(fs.existsSync(path.join(workflowsDir, "ci.yml"))).toBe(false);
   });
 
   it("should have a build workflow that covers all OS/arch", () => {
