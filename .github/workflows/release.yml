@@ -34,7 +34,6 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - run: npm run icons
       - run: npm run test:all
       - run: npm run build
       - run: npm run pipeline:validate:verbose
@@ -55,7 +54,6 @@ jobs:
           - { os: win, arch: arm64, runner: windows-11-arm, command: "npx electron-builder --win --arm64 -p never --config electron-builder.json", artifact: "G1Wiggle-Setup-*-arm64.exe" }
           - { os: linux, arch: x64, runner: ubuntu-latest, command: "npx electron-builder --linux --x64 -p never --config electron-builder.json", artifact: "G1Wiggle-*-x64.AppImage" }
           - { os: linux, arch: arm64, runner: ubuntu-24.04-arm, command: "npx electron-builder --linux --arm64 -p never --config electron-builder.json", artifact: "G1Wiggle-*-arm64.AppImage" }
-          - { os: linux, arch: ia32, runner: ubuntu-latest, command: "npx electron-builder --linux --ia32 -p never --config electron-builder.json", artifact: "G1Wiggle-*-ia32.AppImage" }
           - { os: linux, arch: armv7l, runner: ubuntu-latest, command: "npx electron-builder --linux --armv7l -p never --config electron-builder.json", artifact: "G1Wiggle-*-armv7l.AppImage" }
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 45
@@ -66,7 +64,6 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - run: npm run icons
       - run: npm run build
       - name: Package release artifact
         shell: bash
@@ -81,17 +78,21 @@ jobs:
           test ${#files[@]} -eq 1
           test -s "${files[0]}"
       - name: Install/smoke-test Linux
-        if: ${{ startsWith(matrix.os, 'linux') }}
+        # armv7l is cross-packaged on an x64 runner and cannot be executed there
+        if: ${{ matrix.os == 'linux' && matrix.arch != 'armv7l' }}
+        timeout-minutes: 10
         shell: bash
         run: |
           shopt -s nullglob
           files=(release/${{ matrix.artifact }})
           test ${#files[@]} -eq 1
           chmod +x "${files[0]}"
+          command -v xvfb-run >/dev/null || { sudo apt-get update && sudo apt-get install -y xvfb; }
           "${files[0]}" --appimage-version
-          "${files[0]}" --appimage-extract-and-run --version
+          xvfb-run -a "${files[0]}" --appimage-extract-and-run --no-sandbox --version
       - name: Install/smoke-test macOS
         if: ${{ matrix.os == 'mac' }}
+        timeout-minutes: 10
         shell: bash
         run: |
           shopt -s nullglob
@@ -105,6 +106,7 @@ jobs:
           hdiutil detach "$mount_point" -quiet
       - name: Install/smoke-test Windows
         if: ${{ matrix.os == 'win' }}
+        timeout-minutes: 10
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
@@ -115,7 +117,8 @@ jobs:
           Start-Process -FilePath $files[0].FullName -ArgumentList '/S',('/D='+$target) -Wait
           $exe = Join-Path $target 'G1Wiggle.exe'
           if (!(Test-Path $exe)) { throw "Installed executable not found" }
-          & $exe --version
+          $proc = Start-Process -FilePath $exe -ArgumentList '--version' -Wait -PassThru
+          if ($proc.ExitCode -ne 0) { throw "G1Wiggle.exe --version exited with $($proc.ExitCode)" }
       - name: Purge intermediates
         shell: bash
         run: |
@@ -144,9 +147,8 @@ jobs:
         run: |
           shopt -s nullglob
           files=(release-artifacts/*.dmg release-artifacts/*.exe release-artifacts/*.AppImage)
-          test ${#files[@]} -eq 10
-          printf '%s
-' "${files[@]}"
+          test ${#files[@]} -eq 9
+          printf '%s\n' "${files[@]}"
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:

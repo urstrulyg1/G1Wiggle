@@ -67,18 +67,19 @@ describe("strict-workflows: build.yml strict validation", () => {
     expect(content).toContain("ia32");
   });
 
-  it("has test job with checkout, setup-node, npm ci, icons, test, build, electron-builder --help", () => {
+  it("has test job with checkout, setup-node, npm ci, test, build, electron-builder --help", () => {
     expect(content).toContain("test:");
     expect(content).toContain("actions/checkout@v4");
     expect(content).toContain("actions/setup-node@v4");
     expect(content).toContain("npm ci");
-    expect(content).toContain("npm run icons");
+    // Icons are committed under build/; regenerating them needs a display and macOS-only tools
+    expect(content).not.toContain("npm run icons");
     expect(content).toContain("npm run test");
     expect(content).toContain("npm run build");
     expect(content).toContain("electron-builder --help");
   });
 
-  it("has build matrix with 9+ entries covering mac x64/arm64/universal, win x64/ia32/arm64, linux x64/arm64/ia32", () => {
+  it("has build matrix with 9+ entries covering mac x64/arm64/universal, win x64/ia32/arm64, linux x64/arm64/armv7l", () => {
     expect(content).toContain("macos-latest");
     expect(content).toContain("windows-latest");
     expect(content).toContain("ubuntu-latest");

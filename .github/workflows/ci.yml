@@ -17,6 +17,7 @@ jobs:
   validate-pipeline:
     name: Validate Pipeline and Build Scripts
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -27,8 +28,6 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
-      - name: Generate icons
-        run: npm run icons
       - name: Validate build.sh
         run: |
           test -x build.sh || chmod +x build.sh
@@ -57,25 +56,18 @@ jobs:
       fail-fast: true
       max-parallel: 1
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        arch: [x64, arm64, ia32, universal]
-        exclude:
-          - os: ubuntu-latest
-            arch: universal
-          - os: ubuntu-latest
-            arch: ia32
-          - os: windows-latest
-            arch: universal
-          - os: macos-latest
-            arch: ia32
+        # Explicit list: every entry must have a mapping in "Validate architecture target"
         include:
-          - os: ubuntu-24.04-arm
-            arch: arm64
-          - os: windows-latest
-            arch: ia32
-          - os: macos-latest
-            arch: universal
+          - { os: macos-latest, arch: x64 }
+          - { os: macos-latest, arch: arm64 }
+          - { os: macos-latest, arch: universal }
+          - { os: windows-latest, arch: x64 }
+          - { os: windows-latest, arch: ia32 }
+          - { os: windows-11-arm, arch: arm64 }
+          - { os: ubuntu-latest, arch: x64 }
+          - { os: ubuntu-24.04-arm, arch: arm64 }
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -86,8 +78,6 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
-      - name: Generate icons
-        run: npm run icons
       - name: Build web application
         run: npm run build
       - name: Validate Electron Builder CLI
@@ -101,6 +91,7 @@ jobs:
             macos-latest:universal) npx electron-builder --mac --universal -p never --config electron-builder.json --dir ;;
             windows-latest:x64) npx electron-builder --win --x64 -p never --config electron-builder.json --dir ;;
             windows-latest:ia32) npx electron-builder --win --ia32 -p never --config electron-builder.json --dir ;;
+            windows-11-arm:arm64) npx electron-builder --win --arm64 -p never --config electron-builder.json --dir ;;
             ubuntu-latest:x64) npx electron-builder --linux --x64 -p never --config electron-builder.json --dir ;;
             ubuntu-24.04-arm:arm64) npx electron-builder --linux --arm64 -p never --config electron-builder.json --dir ;;
             *) echo "No strict target mapping for this matrix entry"; exit 1 ;;

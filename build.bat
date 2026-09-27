@@ -210,6 +210,10 @@ if /I "%TARGET%"=="linux" (
     echo   Packaging Linux packages for all architectures !DIM!^(x64 + arm64^)!NC!
     call npx electron-builder --linux --x64 --arm64 -p never --config electron-builder.json
   ) else (
+    if /I "!TARGET_ARCH!"=="ia32" (
+      echo   !RED!Linux ia32 is not supported: Electron stopped publishing 32-bit x86 Linux builds in v19.!NC!
+      goto build_failed
+    )
     echo   Packaging Linux package specifically for selected hardware !DIM!^(!TARGET_ARCH!^)!NC!
     call npx electron-builder --linux --!TARGET_ARCH! -p never --config electron-builder.json
   )

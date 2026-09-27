@@ -42,7 +42,6 @@ const SECONDARY: StrictTarget[] = [
 
 // Legacy matrix — MAY be built, not required
 const LEGACY: StrictTarget[] = [
-  { os: "linux", arch: "ia32", ext: "AppImage", runner: "ubuntu-latest", priority: "legacy", artifact: "G1Wiggle-1.0.0-ia32.AppImage", buildCmd: "npx electron-builder --linux --ia32 -p never --config electron-builder.json" },
   { os: "linux", arch: "armv7l", ext: "AppImage", runner: "ubuntu-24.04-arm", priority: "legacy", artifact: "G1Wiggle-1.0.0-armv7l.AppImage", buildCmd: "npx electron-builder --linux --armv7l -p never --config electron-builder.json" },
 ];
 
@@ -131,13 +130,19 @@ describe("strict-matrix: secondary and legacy", () => {
     expect(SECONDARY.map((t) => `${t.os}-${t.arch}`).sort()).toEqual(["mac-universal", "win-arm64"]);
   });
 
-  it("legacy has 2 entries: linux ia32, linux armv7l", () => {
-    expect(LEGACY.length).toBe(2);
-    expect(LEGACY.map((t) => `${t.os}-${t.arch}`).sort()).toEqual(["linux-armv7l", "linux-ia32"]);
+  it("legacy has 1 entry: linux armv7l (Electron has no Linux ia32 builds since v19)", () => {
+    expect(LEGACY.length).toBe(1);
+    expect(LEGACY.map((t) => `${t.os}-${t.arch}`).sort()).toEqual(["linux-armv7l"]);
   });
 
-  it("all (primary+secondary+legacy) has 10 entries", () => {
-    expect(ALL.length).toBe(10);
+  it("all (primary+secondary+legacy) has 9 entries", () => {
+    expect(ALL.length).toBe(9);
+  });
+
+  it("no workflow or build script packages Linux ia32", () => {
+    for (const file of [".github/workflows/build.yml", ".github/workflows/ci.yml", ".github/workflows/release.yml", "scripts/build-all.mjs"]) {
+      expect(read(file)).not.toContain("--linux --ia32");
+    }
   });
 
   it("all has no duplicate os-arch", () => {
@@ -344,8 +349,7 @@ describe("strict-matrix: artifact naming strict regex", () => {
   });
 
   it("legacy artifacts match strict naming", () => {
-    expect(LEGACY[0].artifact).toMatch(/^G1Wiggle-\d+\.\d+\.\d+-ia32\.AppImage$/);
-    expect(LEGACY[1].artifact).toMatch(/^G1Wiggle-\d+\.\d+\.\d+-armv7l\.AppImage$/);
+    expect(LEGACY[0].artifact).toMatch(/^G1Wiggle-\d+\.\d+\.\d+-armv7l\.AppImage$/);
   });
 
   it("all artifacts contain version 1.0.0 placeholder and arch", () => {

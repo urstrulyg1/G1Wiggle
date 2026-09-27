@@ -5,11 +5,11 @@
  * This script orchestrates building every app variant:
  *   - macOS: x64, arm64, universal (DMG)
  *   - Windows: x64, ia32, arm64 (NSIS EXE)
- *   - Linux: x64, arm64, ia32, armv7l (AppImage)
+ *   - Linux: x64, arm64, armv7l (AppImage) — Electron has no Linux ia32 builds since v19
  *
  * Usage:
  *   node scripts/build-all.mjs                # Build all primary (6 artifacts)
- *   node scripts/build-all.mjs --all          # Build all including secondary (10 artifacts)
+ *   node scripts/build-all.mjs --all          # Build all including secondary (9 artifacts)
  *   node scripts/build-all.mjs --mac          # Build all mac archs
  *   node scripts/build-all.mjs --win          # Build all win archs
  *   node scripts/build-all.mjs --linux        # Build all linux archs
@@ -57,7 +57,6 @@ const MATRIX = [
   // Linux primary + legacy
   { os: "linux", arch: "x64", ext: "AppImage", priority: "primary", cmd: "npx electron-builder --linux --x64 -p never --config electron-builder.json", artifact: "G1Wiggle-*-x64.AppImage" },
   { os: "linux", arch: "arm64", ext: "AppImage", priority: "primary", cmd: "npx electron-builder --linux --arm64 -p never --config electron-builder.json", artifact: "G1Wiggle-*-arm64.AppImage" },
-  { os: "linux", arch: "ia32", ext: "AppImage", priority: "legacy", cmd: "npx electron-builder --linux --ia32 -p never --config electron-builder.json", artifact: "G1Wiggle-*-ia32.AppImage" },
   { os: "linux", arch: "armv7l", ext: "AppImage", priority: "legacy", cmd: "npx electron-builder --linux --armv7l -p never --config electron-builder.json", artifact: "G1Wiggle-*-armv7l.AppImage" },
 ];
 

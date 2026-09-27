@@ -245,6 +245,10 @@ case "$TARGET" in
       echo -e "   → Packaging Linux packages for all architectures (x64 + arm64)..."
       npx electron-builder --linux --x64 --arm64 -p never --config electron-builder.json
     else
+      if [ "$TARGET_ARCH" = "ia32" ]; then
+        echo -e "${RED}❌ Linux ia32 is not supported: Electron stopped publishing 32-bit x86 Linux builds in v19.${NC}"
+        exit 1
+      fi
       echo -e "   → Packaging Linux package specifically for detected hardware (${TARGET_ARCH})..."
       npx electron-builder --linux "--${TARGET_ARCH}" -p never --config electron-builder.json
     fi

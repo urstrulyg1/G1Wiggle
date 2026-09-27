@@ -294,9 +294,16 @@ ipcMain.on("wiggle:window-close", () => {
   if (mainWindow) mainWindow.close();
 });
 
+// `--version` prints the app version and exits without opening any window.
+// Used by the CI install smoke tests on every OS.
+const isVersionQuery = process.argv.includes("--version");
+
 // App lifecycle
-const singleInstanceLock = app.requestSingleInstanceLock();
-if (!singleInstanceLock) {
+const singleInstanceLock = !isVersionQuery && app.requestSingleInstanceLock();
+if (isVersionQuery) {
+  process.stdout.write(`${app.getVersion()}\n`);
+  app.exit(0);
+} else if (!singleInstanceLock) {
   app.quit();
 } else {
   app.on("second-instance", () => {
