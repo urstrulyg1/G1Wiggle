@@ -308,6 +308,12 @@ if (!singleInstanceLock) {
   });
 
   app.whenReady().then(() => {
+    if (process.argv.includes("--version")) {
+      process.stdout.write(`${app.getVersion()}\n`);
+      app.quit();
+      return;
+    }
+
     createMainWindow();
     createTray();
     createMenu();
