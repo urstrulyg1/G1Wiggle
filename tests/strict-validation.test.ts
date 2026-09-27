@@ -428,7 +428,7 @@ describe("strict: artifact naming regex validation", () => {
   });
 
   it("linux artifacts match strict regex", () => {
-    expect("G1Wiggle-1.0.0-x64.AppImage").toMatch(ARTIFACT_REGEX.linux);
+    expect("G1Wiggle-1.0.0-x86_64.AppImage").toMatch(ARTIFACT_REGEX.linux);
     expect("G1Wiggle-1.0.0-arm64.AppImage").toMatch(ARTIFACT_REGEX.linux);
   });
 
@@ -438,7 +438,7 @@ describe("strict: artifact naming regex validation", () => {
       { file: "G1Wiggle-1.0.0-arm64.dmg", os: "mac" as const },
       { file: "G1Wiggle-Setup-1.0.0-x64.exe", os: "win" as const },
       { file: "G1Wiggle-Setup-1.0.0-ia32.exe", os: "win" as const },
-      { file: "G1Wiggle-1.0.0-x64.AppImage", os: "linux" as const },
+      { file: "G1Wiggle-1.0.0-x86_64.AppImage", os: "linux" as const },
       { file: "G1Wiggle-1.0.0-arm64.AppImage", os: "linux" as const },
     ];
     for (const { file, os } of artifacts) {
