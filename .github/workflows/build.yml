@@ -163,6 +163,16 @@ jobs:
           $installer = @(Get-ChildItem -Path 'release' -Filter '${{ matrix.artifact }}' -File)
           if ($installer.Count -ne 1) { throw "Expected exactly one installer, found $($installer.Count)" }
           & "$env:GITHUB_WORKSPACE/scripts/validate-windows-install.ps1" -InstallerPath $installer[0].FullName -ExpectedArchitecture '${{ matrix.arch }}' -ExpectedVersion "$env:APP_VERSION" -ProductName 'G1Wiggle'
+      - name: Upload failure diagnostics
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: G1Wiggle-${{ matrix.os }}-${{ matrix.arch }}-failure-diagnostics
+          path: |
+            release
+            ${{ runner.temp }}/g1wiggle-*.log
+          if-no-files-found: warn
+          retention-days: 14
       - name: Upload validated artifact
         uses: actions/upload-artifact@v7
         with:
