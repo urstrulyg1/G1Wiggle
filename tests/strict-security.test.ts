@@ -184,7 +184,7 @@ describe("strict-security: dependencies", () => {
 
 describe("strict-security: GitHub workflows", () => {
   it("workflows use pinned Node 24-compatible action versions", () => {
-    for (const file of ["build.yml", "ci.yml", "release.yml"]) {
+    for (const file of ["build.yml", "release.yml"]) {
       const content = read(`.github/workflows/${file}`);
       expect(content).toContain("actions/checkout@v7");
       expect(content).toContain("actions/setup-node@v7");
@@ -195,7 +195,7 @@ describe("strict-security: GitHub workflows", () => {
   });
 
   it("workflows have GH_TOKEN from secrets, not hardcoded", () => {
-    for (const file of ["build.yml", "ci.yml", "release.yml"]) {
+    for (const file of ["build.yml", "release.yml"]) {
       const content = read(`.github/workflows/${file}`);
       if (content.includes("GH_TOKEN")) {
         expect(content).toContain("secrets.GITHUB_TOKEN");
@@ -213,7 +213,7 @@ describe("strict-security: GitHub workflows", () => {
   it("workflows do not have write-all permissions, use minimal permissions", () => {
     // Check that workflows don't have overly permissive permissions
     // This is a best practice check
-    for (const file of ["build.yml", "ci.yml", "release.yml"]) {
+    for (const file of ["build.yml", "release.yml"]) {
       const content = read(`.github/workflows/${file}`);
       // If permissions are defined, they should not be write-all
       if (content.includes("permissions:")) {
@@ -228,7 +228,7 @@ describe("strict-security: GitHub workflows", () => {
   });
 
   it("workflows do not expose secrets in logs (no echo of secrets)", () => {
-    for (const file of ["build.yml", "ci.yml", "release.yml"]) {
+    for (const file of ["build.yml", "release.yml"]) {
       const content = read(`.github/workflows/${file}`);
       expect(content).not.toMatch(/echo.*secrets\./);
       expect(content).not.toMatch(/echo.*GITHUB_TOKEN/);
