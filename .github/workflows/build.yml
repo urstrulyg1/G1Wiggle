@@ -50,7 +50,6 @@ jobs:
 
   build-matrix:
     name: Build ${{ matrix.os }} / ${{ matrix.arch }}
-    needs: test
     strategy:
       fail-fast: false
       max-parallel: 7
@@ -104,19 +103,23 @@ jobs:
           test -s "${files[0]}"
           case "${files[0]}" in *"$APP_VERSION"*) ;; *) echo "Artifact version mismatch: ${files[0]}"; exit 1 ;; esac
           echo "Artifact: ${files[0]}"
-          stat -c "Artifact size: %s bytes" "${files[0]}"
+          size=$(wc -c < "${files[0]}")
+          test "$size" -gt 0
+          echo "Artifact size: ${size} bytes"
       - name: Validate Linux AppImage
         if: ${{ matrix.os == 'linux' }}
         shell: bash
         run: |
           artifact=(release/${{ matrix.artifact }})
           file "${artifact[0]}"
+          test -x "${artifact[0]}" || chmod +x "${artifact[0]}"
           case "${{ matrix.arch }}" in
             x64)
               file "${artifact[0]}" | grep -Eqi 'x86-64|x86_64|amd64'
               chmod +x "${artifact[0]}"
               "${artifact[0]}" --appimage-version
-              "${artifact[0]}" --appimage-extract-and-run --version
+              command -v xvfb-run
+              xvfb-run --auto-servernum "${artifact[0]}" --appimage-extract-and-run --version
               ;;
             arm64)
               file "${artifact[0]}" | grep -Eqi 'aarch64|arm64'
@@ -137,6 +140,7 @@ jobs:
           artifact=(release/${{ matrix.artifact }})
           mount_point="$RUNNER_TEMP/g1wiggle-dmg"
           mkdir -p "$mount_point"
+          hdiutil verify "${artifact[0]}"
           hdiutil attach "${artifact[0]}" -mountpoint "$mount_point" -nobrowse -quiet
           test -d "$mount_point/G1Wiggle.app"
           test -x "$mount_point/G1Wiggle.app/Contents/MacOS/G1Wiggle"
