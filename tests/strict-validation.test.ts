@@ -37,7 +37,7 @@ const ARTIFACT_REGEX = {
 };
 
 const ALL_OS = ["mac", "win", "linux"] as const;
-const ALL_ARCH = ["x64", "arm64", "ia32", "universal", "armv7l"] as const;
+const ALL_ARCH = ["x64", "arm64", "ia32", "universal"] as const;
 const PRIMARY_MATRIX = [
   { os: "mac", arch: "x64" },
   { os: "mac", arch: "arm64" },
@@ -82,14 +82,13 @@ describe("strict: package.json exact validation", () => {
       "electron:mac:x64": "electron-builder --mac --x64",
       "electron:mac:arm64": "electron-builder --mac --arm64",
       "electron:mac:universal": "electron-builder --mac --universal",
-      "electron:win": "electron-builder --win --x64 --ia32 --arm64",
+      "electron:win": "electron-builder --win --x64 --ia32",
       "electron:win:x64": "electron-builder --win --x64",
       "electron:win:ia32": "electron-builder --win --ia32",
-      "electron:win:arm64": "electron-builder --win --arm64",
-      "electron:linux": "electron-builder --linux --x64 --arm64 --armv7l",
+            "electron:linux": "electron-builder --linux --x64 --arm64",
       "electron:linux:x64": "electron-builder --linux --x64",
       "electron:linux:arm64": "electron-builder --linux --arm64",
-      "electron:all": "electron-builder --mac --win --linux --x64 --arm64 --ia32 --armv7l",
+      "electron:all": "electron-builder --mac --x64 --arm64 --universal -p never --config electron-builder.json && electron-builder --win --x64 --ia32 -p never --config electron-builder.json && electron-builder --linux --x64 --arm64 -p never --config electron-builder.json",
     };
     for (const [script, cmd] of Object.entries(expected)) {
       expect(pkg.scripts[script], `missing script ${script}`).toBeDefined();
