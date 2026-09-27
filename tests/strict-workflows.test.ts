@@ -78,7 +78,7 @@ describe("strict-workflows: build.yml strict validation", () => {
     expect(content).toContain("electron-builder --help");
   });
 
-  it("has build matrix with 9+ entries covering mac x64/arm64/universal, win x64/ia32/arm64, linux x64/arm64/ia32", () => {
+  it("has build matrix covering mac x64/arm64/universal, win x64/ia32/arm64, linux x64/arm64/armv7l", () => {
     expect(content).toContain("macos-latest");
     expect(content).toContain("windows-latest");
     expect(content).toContain("ubuntu-latest");
@@ -143,7 +143,7 @@ describe("strict-workflows: build.yml strict validation", () => {
     expect(content).toContain("| OS | Arch | Artifact | Runner |");
   });
 
-  it("uses Node.js 20", () => {
+  it("uses Node.js 22.12.0", () => {
     expect(content).toContain("node-version: 22.12.0");
   });
 
@@ -182,7 +182,7 @@ describe("strict-workflows: ci.yml strict validation", () => {
     expect(content).toContain("artifactName");
   });
 
-  it("has architecture validation job and all runner families", () => {
+  it("keeps build validation in the dedicated build workflow and validates CI scripts here", () => {
     expect(content).toContain("build-matrix");
     expect(content).toContain("ubuntu-latest");
     expect(content).toContain("windows-latest");
