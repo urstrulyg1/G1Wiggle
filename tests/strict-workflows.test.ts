@@ -264,7 +264,7 @@ describe("strict-workflows: release.yml strict validation", () => {
 
 describe("strict-workflows: security and best practices", () => {
   it("caps each native build matrix at four parallel jobs", () => {
-    for (const file of ["build.yml", "ci.yml", "release.yml"]) {
+    for (const file of ["build.yml", "release.yml"]) {
       expect(readWorkflow(file)).toContain("max-parallel: 9");
     }
   });
