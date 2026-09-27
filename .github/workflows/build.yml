@@ -127,10 +127,6 @@ jobs:
               command -v xvfb-run
               xvfb-run --auto-servernum "${artifact[0]}" --appimage-extract-and-run --version
               ;;
-            armv7l)
-              file "${artifact[0]}" | grep -Eqi 'ARM'
-              echo "armv7l architecture validated; runtime execution is not possible on the x64 hosted runner."
-              ;;
             *) exit 1 ;;
           esac
       - name: Validate macOS DMG
