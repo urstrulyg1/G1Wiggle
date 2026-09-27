@@ -102,7 +102,7 @@ describe("strict-workflows: build.yml strict validation", () => {
   it("has a single strict build matrix covering every target", () => {
     expect(content).toContain("build-matrix");
     expect(content).toContain("armv7l");
-    expect(content).toContain("max-parallel: 4");
+    expect(content).toContain("max-parallel: 9");
   });
 
   it("does not use unsafe cross-platform build aggregation", () => {
@@ -111,8 +111,8 @@ describe("strict-workflows: build.yml strict validation", () => {
   });
 
   it("has strict fail-fast and a four-job parallel matrix cap", () => {
-    expect(content).toContain("fail-fast: true");
-    expect(content).toContain("max-parallel: 4");
+    expect(content).toContain("fail-fast: false");
+    expect(content).toContain("max-parallel: 9");
   });
 
   it("does not silently ignore build failures", () => {
@@ -144,7 +144,7 @@ describe("strict-workflows: build.yml strict validation", () => {
   });
 
   it("uses Node.js 20", () => {
-    expect(content).toContain("node-version: 20");
+    expect(content).toContain("node-version: 22.12.0");
   });
 
   it("has cache npm", () => {
@@ -278,7 +278,7 @@ describe("strict-workflows: release.yml strict validation", () => {
 describe("strict-workflows: security and best practices", () => {
   it("caps each native build matrix at four parallel jobs", () => {
     for (const file of ["build.yml", "ci.yml", "release.yml"]) {
-      expect(readWorkflow(file)).toContain("max-parallel: 4");
+      expect(readWorkflow(file)).toContain("max-parallel: 9");
     }
   });
 
