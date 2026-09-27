@@ -8,6 +8,13 @@ param(
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 
+$diagnosticLog = Join-Path $env:RUNNER_TEMP ("g1wiggle-windows-install-$ExpectedArchitecture.log")
+Start-Transcript -Path $diagnosticLog -Force | Out-Null
+trap {
+  try { Stop-Transcript | Out-Null } catch {}
+  throw
+}
+
 function Fail([string]$Message) { throw $Message }
 
 function Get-PeArchitecture([string]$Path) {
@@ -40,6 +47,14 @@ function Get-UninstallEntries {
 if (!(Test-Path -LiteralPath $InstallerPath -PathType Leaf)) { Fail "Installer does not exist: $InstallerPath" }
 $installer = Get-Item -LiteralPath $InstallerPath
 if ($installer.Length -le 0) { Fail "Installer is empty: $InstallerPath" }
+Write-Host "Installer SHA256: $((Get-FileHash -LiteralPath $installer.FullName -Algorithm SHA256).Hash)"
+Write-Host "Installer extension: $($installer.Extension)"
+if ($installer.Extension -ne ".exe") { Fail "Expected an NSIS .exe installer, got: $($installer.Extension)" }
+try {
+  $null = Get-PeArchitecture $installer.FullName
+} catch {
+  Fail "Generated installer is not a valid PE executable: $($_.Exception.Message)"
+}
 
 $expected = $ExpectedVersion -replace '^v', ''
 $requestedDir = Join-Path $env:RUNNER_TEMP ("G1Wiggle-install-" + $ExpectedArchitecture)
@@ -156,3 +171,4 @@ $stillRunning = @(Get-Process -Name "G1Wiggle" -ErrorAction SilentlyContinue | W
 if ($stillRunning.Count -gt 0) { Fail "G1Wiggle did not terminate cleanly after the startup smoke test." }
 
 Write-Host "Windows installation validation PASSED."
+Stop-Transcript | Out-Null
