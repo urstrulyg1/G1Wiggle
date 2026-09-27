@@ -12,14 +12,14 @@ on:
         type: string
 
 concurrency:
-  group: g1wiggle-release-\${{ github.ref }}
+  group: g1wiggle-release-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
   contents: write
 
 env:
-  GH_TOKEN: \${{ secrets.GITHUB_TOKEN }}
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   CSC_IDENTITY_AUTO_DISCOVERY: false
   CI_NODE_VERSION: "22.12.0"
 
@@ -33,7 +33,7 @@ jobs:
       - name: Setup Node.js 22
         uses: actions/setup-node@v7
         with:
-          node-version: \${{ env.CI_NODE_VERSION }}
+          node-version: ${{ env.CI_NODE_VERSION }}
           cache: npm
       - name: Verify Node and npm
         run: |
@@ -47,7 +47,7 @@ jobs:
       - run: npm run pipeline:validate:verbose
 
   release-build:
-    name: Release \${{ matrix.os }} / \${{ matrix.arch }}
+    name: Release ${{ matrix.os }} / ${{ matrix.arch }}
     needs: test
     strategy:
       fail-fast: false
@@ -63,14 +63,14 @@ jobs:
           - { os: linux, arch: x64, runner: ubuntu-latest, command: "npx electron-builder --linux --x64 -p never --config electron-builder.json", artifact: "G1Wiggle-*-x64.AppImage" }
           - { os: linux, arch: arm64, runner: ubuntu-24.04-arm, command: "npx electron-builder --linux --arm64 -p never --config electron-builder.json", artifact: "G1Wiggle-*-arm64.AppImage" }
           - { os: linux, arch: armv7l, runner: ubuntu-latest, command: "npx electron-builder --linux --armv7l -p never --config electron-builder.json", artifact: "G1Wiggle-*-armv7l.AppImage" }
-    runs-on: \${{ matrix.runner }}
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v7
       - name: Setup Node.js 22
         uses: actions/setup-node@v7
         with:
-          node-version: \${{ env.CI_NODE_VERSION }}
+          node-version: ${{ env.CI_NODE_VERSION }}
           cache: npm
       - name: Read package version
         shell: bash
@@ -82,41 +82,41 @@ jobs:
         shell: bash
         run: |
           rm -rf release
-          \${{ matrix.command }}
+          ${{ matrix.command }}
       - name: Verify exact artifact
         shell: bash
         run: |
           shopt -s nullglob
-          files=(release/\${{ matrix.artifact }})
-          if [ \${#files[@]} -ne 1 ]; then
+          files=(release/${{ matrix.artifact }})
+          if [ ${#files[@]} -ne 1 ]; then
             find release -maxdepth 2 -type f -printf '%p %s bytes\n'
             exit 1
           fi
-          test -s "\${files[0]}"
-          case "\${files[0]}" in *"\$APP_VERSION"*) ;; *) echo "Artifact version mismatch"; exit 1 ;; esac
+          test -s "${files[0]}"
+          case "${files[0]}" in *"\$APP_VERSION"*) ;; *) echo "Artifact version mismatch"; exit 1 ;; esac
       - name: Validate Linux AppImage
-        if: \${{ matrix.os == 'linux' }}
+        if: ${{ matrix.os == 'linux' }}
         shell: bash
         run: |
-          artifact=(release/\${{ matrix.artifact }})
-          file "\${artifact[0]}"
-          case "\${{ matrix.arch }}" in
-            x64) file "\${artifact[0]}" | grep -Eqi 'x86-64|x86_64|amd64'; chmod +x "\${artifact[0]}"; "\${artifact[0]}" --appimage-version; "\${artifact[0]}" --appimage-extract-and-run --version ;;
-            arm64) file "\${artifact[0]}" | grep -Eqi 'aarch64|arm64'; chmod +x "\${artifact[0]}"; "\${artifact[0]}" --appimage-version; "\${artifact[0]}" --appimage-extract-and-run --version ;;
-            armv7l) file "\${artifact[0]}" | grep -Eqi 'ARM';;
+          artifact=(release/${{ matrix.artifact }})
+          file "${artifact[0]}"
+          case "${{ matrix.arch }}" in
+            x64) file "${artifact[0]}" | grep -Eqi 'x86-64|x86_64|amd64'; chmod +x "${artifact[0]}"; "${artifact[0]}" --appimage-version; "${artifact[0]}" --appimage-extract-and-run --version ;;
+            arm64) file "${artifact[0]}" | grep -Eqi 'aarch64|arm64'; chmod +x "${artifact[0]}"; "${artifact[0]}" --appimage-version; "${artifact[0]}" --appimage-extract-and-run --version ;;
+            armv7l) file "${artifact[0]}" | grep -Eqi 'ARM';;
             *) exit 1 ;;
           esac
       - name: Validate macOS DMG
-        if: \${{ matrix.os == 'mac' }}
+        if: ${{ matrix.os == 'mac' }}
         shell: bash
         run: |
-          artifact=(release/\${{ matrix.artifact }})
+          artifact=(release/${{ matrix.artifact }})
           mount_point="$RUNNER_TEMP/g1wiggle-dmg"
           mkdir -p "$mount_point"
-          hdiutil attach "\${artifact[0]}" -mountpoint "$mount_point" -nobrowse -quiet
+          hdiutil attach "${artifact[0]}" -mountpoint "$mount_point" -nobrowse -quiet
           test -x "$mount_point/G1Wiggle.app/Contents/MacOS/G1Wiggle"
           info=$(lipo -archs "$mount_point/G1Wiggle.app/Contents/MacOS/G1Wiggle")
-          case "\${{ matrix.arch }}" in
+          case "${{ matrix.arch }}" in
             x64) echo "$info" | grep -qw x86_64 ;;
             arm64) echo "$info" | grep -qw arm64 ;;
             universal) echo "$info" | grep -qw x86_64 && echo "$info" | grep -qw arm64 ;;
@@ -127,23 +127,23 @@ jobs:
           "$mount_point/G1Wiggle.app/Contents/MacOS/G1Wiggle" --version
           hdiutil detach "$mount_point" -quiet
       - name: Validate Windows NSIS installation
-        if: \${{ matrix.os == 'win' }}
+        if: ${{ matrix.os == 'win' }}
         shell: pwsh
         run: |
-          $installer = @(Get-ChildItem -Path 'release' -Filter '\${{ matrix.artifact }}' -File)
+          $installer = @(Get-ChildItem -Path 'release' -Filter '${{ matrix.artifact }}' -File)
           if ($installer.Count -ne 1) { throw "Expected exactly one installer, found $($installer.Count)" }
-          & "$env:GITHUB_WORKSPACE/scripts/validate-windows-install.ps1" -InstallerPath $installer[0].FullName -ExpectedArchitecture '\${{ matrix.arch }}' -ExpectedVersion "$env:APP_VERSION" -ProductName 'G1Wiggle'
+          & "$env:GITHUB_WORKSPACE/scripts/validate-windows-install.ps1" -InstallerPath $installer[0].FullName -ExpectedArchitecture '${{ matrix.arch }}' -ExpectedVersion "$env:APP_VERSION" -ProductName 'G1Wiggle'
       - name: Upload release artifact
         uses: actions/upload-artifact@v7
         with:
-          name: G1Wiggle-release-\${{ matrix.os }}-\${{ matrix.arch }}
-          path: release/\${{ matrix.artifact }}
+          name: G1Wiggle-release-${{ matrix.os }}-${{ matrix.arch }}
+          path: release/${{ matrix.artifact }}
           if-no-files-found: error
           retention-days: 90
 
   release-summary:
     name: Publish GitHub Release
-    if: \${{ always() && needs.release-build.result == 'success' }}
+    if: ${{ always() && needs.release-build.result == 'success' }}
     needs: release-build
     runs-on: ubuntu-latest
     steps:
@@ -157,16 +157,16 @@ jobs:
         run: |
           shopt -s nullglob
           files=(release-artifacts/*.dmg release-artifacts/*.exe release-artifacts/*.AppImage)
-          test \${#files[@]} -eq 9
-          for f in "\${files[@]}"; do test -s "$f"; done
+          test ${#files[@]} -eq 9
+          for f in "${files[@]}"; do test -s "$f"; done
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: \${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
+          tag_name: ${{ github.event_name == 'workflow_dispatch' && inputs.version || github.ref_name }}
           files: |
             release-artifacts/*.dmg
             release-artifacts/*.exe
             release-artifacts/*.AppImage
           generate_release_notes: true
         env:
-          GITHUB_TOKEN: \${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
