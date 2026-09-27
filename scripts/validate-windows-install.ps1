@@ -27,9 +27,9 @@ function Get-PeArchitecture([string]$Path) {
 
 function Get-UninstallEntries {
   @(
-    "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*",
-    "HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*",
-    "HKLM:\Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*"
+    "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*",
+    "HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*",
+    "HKLM:\\Software\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*"
   ) | ForEach-Object {
     Get-ItemProperty -Path $_ -ErrorAction SilentlyContinue |
       Where-Object { $_.DisplayName -eq $ProductName }
@@ -64,8 +64,8 @@ $entry = $entries |
     if ($_.InstallLocation -and [System.IO.Path]::GetFullPath($_.InstallLocation).TrimEnd('\') -eq $requestedDir.TrimEnd('\')) { 0 } else { 1 }
   }} |
   Select-Object -First 1
-
 if ($null -eq $entry) { $entry = $entries | Select-Object -First 1 }
+
 $installDir = [string]$entry.InstallLocation
 if ([string]::IsNullOrWhiteSpace($installDir)) { Fail "Installer registry entry has no InstallLocation: $($entry.PSPath)" }
 $installDir = [System.IO.Path]::GetFullPath($installDir)
@@ -74,42 +74,58 @@ Write-Host "Detected installation directory: $installDir"
 Write-Host "Registry key: $($entry.PSPath)"
 Write-Host "DisplayName: $($entry.DisplayName)"
 Write-Host "DisplayVersion: $($entry.DisplayVersion)"
+Write-Host "DisplayIcon: $($entry.DisplayIcon)"
+Write-Host "Publisher: $($entry.Publisher)"
 Write-Host "UninstallString: $($entry.UninstallString)"
 
 if (!(Test-Path -LiteralPath $installDir -PathType Container)) { Fail "Detected installation directory does not exist: $installDir" }
 
-$candidates = @(Get-ChildItem -LiteralPath $installDir -Recurse -File -Filter "$ProductName.exe" -ErrorAction SilentlyContinue)
+$expected = $ExpectedVersion -replace '^v',''
+$candidates = @(Get-ChildItem -LiteralPath $installDir -Recurse -File -Filter "*.exe" -ErrorAction SilentlyContinue | ForEach-Object {
+  $vi = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($_.FullName)
+  [pscustomobject]@{
+    Path = $_.FullName
+    Length = $_.Length
+    ProductName = $vi.ProductName
+    FileDescription = $vi.FileDescription
+    FileVersion = $vi.FileVersion
+    ProductVersion = $vi.ProductVersion
+  }
+} | Where-Object {
+  $_.ProductName -eq $ProductName -and
+  (($_.FileVersion -match [regex]::Escape($expected)) -or ($_.ProductVersion -match [regex]::Escape($expected)))
+})
+
 if ($candidates.Count -ne 1) {
-  Write-Host "Installed executable candidates:"
+  Write-Host "Executable candidates discovered under the installer-reported directory:"
+  $candidates | Format-Table -AutoSize | Out-String | Write-Host
+  Write-Host "All installed files:"
   Get-ChildItem -LiteralPath $installDir -Recurse -File -ErrorAction SilentlyContinue |
     Select-Object FullName, Length, LastWriteTime | Format-Table -AutoSize | Out-String | Write-Host
-  Fail "Expected exactly one $ProductName.exe under the installer-reported installation directory; found $($candidates.Count)."
+  Fail "Could not uniquely identify the installed application executable from product metadata/version."
 }
 
-$exePath = $candidates[0].FullName
-Write-Host "Detected executable: $exePath"
+$exePath = $candidates[0].Path
+Write-Host "Detected application executable: $exePath"
+Write-Host "Executable ProductName: $($candidates[0].ProductName)"
+Write-Host "Executable FileVersion: $($candidates[0].FileVersion)"
+Write-Host "Executable ProductVersion: $($candidates[0].ProductVersion)"
 
 $peArch = Get-PeArchitecture $exePath
 Write-Host "Detected PE architecture: $peArch"
 if ($peArch -ne $ExpectedArchitecture) { Fail "Architecture mismatch: expected $ExpectedArchitecture, installed executable is $peArch." }
 
-$versionInfo = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($exePath)
-$fileVersion = $versionInfo.FileVersion
-$productVersion = $versionInfo.ProductVersion
-$expected = $ExpectedVersion -replace '^v',''
-Write-Host "Executable FileVersion: $fileVersion"
-Write-Host "Executable ProductVersion: $productVersion"
-if (($fileVersion -notmatch [regex]::Escape($expected)) -and ($productVersion -notmatch [regex]::Escape($expected))) {
-  Fail "Version mismatch: expected $expected, executable reports FileVersion=$fileVersion ProductVersion=$productVersion."
+if ($entry.DisplayVersion -and $entry.DisplayVersion -ne $expected) {
+  Fail "Registry version mismatch: expected $expected, registry reports $($entry.DisplayVersion)."
 }
-if ($entry.DisplayVersion -and $entry.DisplayVersion -ne $expected) { Fail "Registry version mismatch: expected $expected, registry reports $($entry.DisplayVersion)." }
 
-$versionProc = Start-Process -FilePath $exePath -ArgumentList "--version" -Wait -PassThru -NoNewWindow
+$stdout = Join-Path $env:RUNNER_TEMP "g1wiggle-startup-$ExpectedArchitecture.stdout.log"
+$stderr = Join-Path $env:RUNNER_TEMP "g1wiggle-startup-$ExpectedArchitecture.stderr.log"
+Remove-Item $stdout,$stderr -Force -ErrorAction SilentlyContinue
+$versionProc = Start-Process -FilePath $exePath -ArgumentList "--version" -Wait -PassThru -NoNewWindow -RedirectStandardOutput $stdout -RedirectStandardError $stderr
 Write-Host "Application --version exit code: $($versionProc.ExitCode)"
+if (Test-Path $stdout) { Write-Host "Application stdout:"; Get-Content $stdout | Write-Host }
+if (Test-Path $stderr) { Write-Host "Application stderr:"; Get-Content $stderr | Write-Host }
 if ($versionProc.ExitCode -ne 0) { Fail "Application startup smoke test failed with exit code $($versionProc.ExitCode)." }
-
-Write-Host "Installed files:"
-Get-ChildItem -LiteralPath $installDir -Recurse -File -ErrorAction SilentlyContinue |
-  Select-Object FullName, Length, LastWriteTime | Format-Table -AutoSize | Out-String | Write-Host
 
 Write-Host "Windows installation validation PASSED."
