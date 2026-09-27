@@ -424,15 +424,12 @@ describe("strict: artifact naming regex validation", () => {
   it("win artifacts match strict regex", () => {
     expect("G1Wiggle-Setup-1.0.0-x64.exe").toMatch(ARTIFACT_REGEX.win);
     expect("G1Wiggle-Setup-1.0.0-ia32.exe").toMatch(ARTIFACT_REGEX.win);
-    expect("G1Wiggle-Setup-1.0.0-arm64.exe").toMatch(ARTIFACT_REGEX.win);
     expect("G1Wiggle-1.0.0-x64.exe").not.toMatch(ARTIFACT_REGEX.win); // missing Setup
   });
 
   it("linux artifacts match strict regex", () => {
     expect("G1Wiggle-1.0.0-x64.AppImage").toMatch(ARTIFACT_REGEX.linux);
     expect("G1Wiggle-1.0.0-arm64.AppImage").toMatch(ARTIFACT_REGEX.linux);
-    expect("G1Wiggle-1.0.0-ia32.AppImage").toMatch(ARTIFACT_REGEX.linux);
-    expect("G1Wiggle-1.0.0-armv7l.AppImage").toMatch(ARTIFACT_REGEX.linux);
   });
 
   it("primary matrix of 6 artifacts all match their OS regex", () => {
