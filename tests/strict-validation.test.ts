@@ -32,8 +32,8 @@ function parseJson(p: string): any {
 // Strict regex for artifact naming
 const ARTIFACT_REGEX = {
   mac: /^G1Wiggle-\d+\.\d+\.\d+-(x64|arm64|universal)\.dmg$/,
-  win: /^G1Wiggle-Setup-\d+\.\d+\.\d+-(x64|ia32|arm64)\.exe$/,
-  linux: /^G1Wiggle-\d+\.\d+\.\d+-(x64|arm64|ia32|armv7l)\.AppImage$/,
+  win: /^G1Wiggle-Setup-\d+\.\d+\.\d+-(x64|ia32)\.exe$/,
+  linux: /^G1Wiggle-\d+\.\d+\.\d+-(x64|arm64)\.AppImage$/,
 };
 
 const ALL_OS = ["mac", "win", "linux"] as const;
@@ -85,7 +85,7 @@ describe("strict: package.json exact validation", () => {
       "electron:win": "electron-builder --win --x64 --ia32",
       "electron:win:x64": "electron-builder --win --x64",
       "electron:win:ia32": "electron-builder --win --ia32",
-            "electron:linux": "electron-builder --linux --x64 --arm64",
+      "electron:linux": "electron-builder --linux --x64 --arm64",
       "electron:linux:x64": "electron-builder --linux --x64",
       "electron:linux:arm64": "electron-builder --linux --arm64",
       "electron:all": "electron-builder --mac --x64 --arm64 --universal -p never --config electron-builder.json && electron-builder --win --x64 --ia32 -p never --config electron-builder.json && electron-builder --linux --x64 --arm64 -p never --config electron-builder.json",
