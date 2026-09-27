@@ -51,7 +51,7 @@ jobs:
     needs: test
     strategy:
       fail-fast: false
-      max-parallel: 9
+      max-parallel: 7
       matrix:
         include:
           - { os: mac, arch: x64, runner: macos-15-intel, command: "npx electron-builder --mac --x64 -p never --config electron-builder.json", artifact: "G1Wiggle-*-x64.dmg" }
@@ -59,10 +59,8 @@ jobs:
           - { os: mac, arch: universal, runner: macos-latest, command: "npx electron-builder --mac --universal -p never --config electron-builder.json", artifact: "G1Wiggle-*-universal.dmg" }
           - { os: win, arch: x64, runner: windows-latest, command: "npx electron-builder --win --x64 -p never --config electron-builder.json", artifact: "G1Wiggle-Setup-*-x64.exe" }
           - { os: win, arch: ia32, runner: windows-latest, command: "npx electron-builder --win --ia32 -p never --config electron-builder.json", artifact: "G1Wiggle-Setup-*-ia32.exe" }
-          - { os: win, arch: arm64, runner: windows-11-arm, command: "npx electron-builder --win --arm64 -p never --config electron-builder.json", artifact: "G1Wiggle-Setup-*-arm64.exe" }
           - { os: linux, arch: x64, runner: ubuntu-latest, command: "npx electron-builder --linux --x64 -p never --config electron-builder.json", artifact: "G1Wiggle-*-x86_64.AppImage" }
           - { os: linux, arch: arm64, runner: ubuntu-24.04-arm, command: "npx electron-builder --linux --arm64 -p never --config electron-builder.json", artifact: "G1Wiggle-*-arm64.AppImage" }
-          - { os: linux, arch: armv7l, runner: ubuntu-latest, command: "npx electron-builder --linux --armv7l -p never --config electron-builder.json", artifact: "G1Wiggle-*-armv7l.AppImage" }
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 45
     steps:
@@ -101,8 +99,8 @@ jobs:
           artifact=(release/${{ matrix.artifact }})
           file "${artifact[0]}"
           case "${{ matrix.arch }}" in
-            x64) file "${artifact[0]}" | grep -Eqi 'x86-64|x86_64|amd64'; chmod +x "${artifact[0]}"; "${artifact[0]}" --appimage-version; "${artifact[0]}" --appimage-extract-and-run --version ;;
-            arm64) file "${artifact[0]}" | grep -Eqi 'aarch64|arm64'; chmod +x "${artifact[0]}"; "${artifact[0]}" --appimage-version; "${artifact[0]}" --appimage-extract-and-run --version ;;
+            x64) file "${artifact[0]}" | grep -Eqi 'x86-64|x86_64|amd64'; chmod +x "${artifact[0]}"; "${artifact[0]}" --appimage-version; command -v xvfb-run; xvfb-run --auto-servernum "${artifact[0]}" --appimage-extract-and-run --version ;;
+            arm64) file "${artifact[0]}" | grep -Eqi 'aarch64|arm64'; chmod +x "${artifact[0]}"; "${artifact[0]}" --appimage-version; command -v xvfb-run; xvfb-run --auto-servernum "${artifact[0]}" --appimage-extract-and-run --version ;;
             armv7l) file "${artifact[0]}" | grep -Eqi 'ARM';;
             *) exit 1 ;;
           esac
@@ -113,6 +111,7 @@ jobs:
           artifact=(release/${{ matrix.artifact }})
           mount_point="$RUNNER_TEMP/g1wiggle-dmg"
           mkdir -p "$mount_point"
+          hdiutil verify "${artifact[0]}"
           hdiutil attach "${artifact[0]}" -mountpoint "$mount_point" -nobrowse -quiet
           test -x "$mount_point/G1Wiggle.app/Contents/MacOS/G1Wiggle"
           info=$(lipo -archs "$mount_point/G1Wiggle.app/Contents/MacOS/G1Wiggle")
@@ -157,7 +156,7 @@ jobs:
         run: |
           shopt -s nullglob
           files=(release-artifacts/*.dmg release-artifacts/*.exe release-artifacts/*.AppImage)
-          test ${#files[@]} -eq 9
+          test ${#files[@]} -eq 7
           for f in "${files[@]}"; do test -s "$f"; done
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
