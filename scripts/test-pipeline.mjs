@@ -26,10 +26,13 @@ const dryRun = process.argv.includes("--dry-run");
 const MATRIX = [
   { os: "mac", arch: "x64", ext: "dmg" },
   { os: "mac", arch: "arm64", ext: "dmg" },
+  { os: "mac", arch: "universal", ext: "dmg" },
   { os: "win", arch: "x64", ext: "exe" },
   { os: "win", arch: "ia32", ext: "exe" },
+  { os: "win", arch: "arm64", ext: "exe" },
   { os: "linux", arch: "x64", ext: "AppImage" },
   { os: "linux", arch: "arm64", ext: "AppImage" },
+  { os: "linux", arch: "armv7l", ext: "AppImage" },
 ];
 
 function log(msg, level = "info") {
@@ -203,7 +206,7 @@ async function main() {
 
   // 7. Validate matrix completeness
   log("Validating build matrix completeness...", "step");
-  log(`Matrix: ${MATRIX.length} primary artifacts (mac x64/arm64, win x64/ia32, linux x64/arm64)`, "info");
+  log(`Matrix: ${MATRIX.length} supported build targets (mac x64/arm64/universal, win x64/ia32/arm64, linux x64/arm64/armv7l)`, "info");
   for (const entry of MATRIX) {
     log(`  - ${entry.os} ${entry.arch} → ${entry.ext}`, "info");
   }
