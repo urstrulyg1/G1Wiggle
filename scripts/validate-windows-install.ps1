@@ -11,8 +11,10 @@ Set-StrictMode -Version Latest
 $diagnosticLog = Join-Path $env:RUNNER_TEMP ("g1wiggle-windows-install-$ExpectedArchitecture.log")
 Start-Transcript -Path $diagnosticLog -Force | Out-Null
 trap {
+  $originalError = $_
   try { Stop-Transcript | Out-Null } catch {}
-  throw
+  Write-Error $originalError
+  exit 1
 }
 
 function Fail([string]$Message) { throw $Message }
