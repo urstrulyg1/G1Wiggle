@@ -3,8 +3,11 @@ name: CI
 on:
   push:
     branches: [main, master, "arena/**"]
-  pull_request:
-    branches: [main, master]
+
+
+concurrency:
+  group: g1wiggle-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
