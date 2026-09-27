@@ -183,10 +183,11 @@ describe("strict-security: dependencies", () => {
 });
 
 describe("strict-security: GitHub workflows", () => {
-  it("workflows use pinned actions versions v4 (not floating)", () => {
+  it("workflows use pinned Node 24-compatible action versions", () => {
     for (const file of ["build.yml", "ci.yml", "release.yml"]) {
       const content = read(`.github/workflows/${file}`);
-      expect(content).toContain("@v4");
+      expect(content).toContain("actions/checkout@v7");
+      expect(content).toContain("actions/setup-node@v7");
       // Should not use @master or @main for actions
       expect(content).not.toContain("actions/checkout@master");
       expect(content).not.toContain("actions/setup-node@master");

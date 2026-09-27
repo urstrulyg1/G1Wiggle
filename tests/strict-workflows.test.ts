@@ -69,8 +69,8 @@ describe("strict-workflows: build.yml strict validation", () => {
 
   it("has test job with checkout, setup-node, npm ci, icons, test, build, electron-builder --help", () => {
     expect(content).toContain("test:");
-    expect(content).toContain("actions/checkout@v4");
-    expect(content).toContain("actions/setup-node@v4");
+    expect(content).toContain("actions/checkout@v7");
+    expect(content).toContain("actions/setup-node@v7");
     expect(content).toContain("npm ci");
     expect(content).toContain("npm run icons");
     expect(content).toContain("npm run test");
@@ -131,8 +131,8 @@ describe("strict-workflows: build.yml strict validation", () => {
     expect(content).toContain("*-unpacked");
   });
 
-  it("has upload-artifact@v4 with strict missing-artifact failure, retention-days 30", () => {
-    expect(content).toContain("actions/upload-artifact@v4");
+  it("has upload-artifact@v7 with strict missing-artifact failure, retention-days 30", () => {
+    expect(content).toContain("actions/upload-artifact@v7");
     expect(content).toContain("if-no-files-found: error");
     expect(content).toContain("retention-days: 30");
   });
@@ -254,7 +254,7 @@ describe("strict-workflows: release.yml strict validation", () => {
 
   it("has release-summary job downloading all artifacts and creating GitHub Release on tag", () => {
     expect(content).toContain("release-summary:");
-    expect(content).toContain("download-artifact@v4");
+    expect(content).toContain("download-artifact@v8");
     expect(content).toContain("softprops/action-gh-release@v2");
     expect(content).toContain('tag_name:');
   });
@@ -276,22 +276,22 @@ describe("strict-workflows: release.yml strict validation", () => {
 });
 
 describe("strict-workflows: security and best practices", () => {
-  it("all workflows use checkout@v4 and setup-node@v4 (not v3 or older)", () => {
+  it("all workflows use Node 24-compatible checkout and setup-node actions", () => {
     for (const file of ["build.yml", "ci.yml", "release.yml"]) {
       const content = readWorkflow(file);
-      expect(content).toContain("actions/checkout@v4");
-      expect(content).toContain("actions/setup-node@v4");
-      expect(content).not.toContain("actions/checkout@v3");
-      expect(content).not.toContain("actions/setup-node@v3");
+      expect(content).toContain("actions/checkout@v7");
+      expect(content).toContain("actions/setup-node@v7");
+      expect(content).not.toContain("actions/checkout@v4");
+      expect(content).not.toContain("actions/setup-node@v4");
     }
   });
 
-  it("all workflows use upload-artifact@v4 and download-artifact@v4", () => {
+  it("artifact workflows use Node 24-compatible artifact actions", () => {
     const build = readWorkflow("build.yml");
-    expect(build).toContain("actions/upload-artifact@v4");
+    expect(build).toContain("actions/upload-artifact@v7");
     const release = readWorkflow("release.yml");
-    expect(release).toContain("actions/upload-artifact@v4");
-    expect(release).toContain("actions/download-artifact@v4");
+    expect(release).toContain("actions/upload-artifact@v7");
+    expect(release).toContain("actions/download-artifact@v8");
   });
 
   it("workflows do not have hardcoded secrets, only secrets.GITHUB_TOKEN", () => {
