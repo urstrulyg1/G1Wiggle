@@ -92,18 +92,6 @@ const MATRIX: MatrixEntry[] = [
     priority: "primary",
     notes: "32-bit Windows 10/11, legacy support",
   },
-  {
-    os: "win",
-    arch: "arm64",
-    ext: "exe",
-    target: "nsis",
-    artifact: "G1Wiggle-Setup-1.0.0-arm64.exe",
-    runner: "windows-latest",
-    supported: true,
-    priority: "secondary",
-    notes: "Windows on ARM (Surface Pro X, etc)",
-  },
-
   // Linux — primary: x64 + arm64, legacy: ia32, armv7l
   {
     os: "linux",
@@ -126,28 +114,6 @@ const MATRIX: MatrixEntry[] = [
     supported: true,
     priority: "primary",
     notes: "AArch64 Linux, Raspberry Pi 4/5, ARM servers",
-  },
-  {
-    os: "linux",
-    arch: "ia32",
-    ext: "AppImage",
-    target: "AppImage",
-    artifact: "G1Wiggle-1.0.0-ia32.AppImage",
-    runner: "ubuntu-latest",
-    supported: false,
-    priority: "legacy",
-    notes: "32-bit Linux, deprecated",
-  },
-  {
-    os: "linux",
-    arch: "armv7l",
-    ext: "AppImage",
-    target: "AppImage",
-    artifact: "G1Wiggle-1.0.0-armv7l.AppImage",
-    runner: "ubuntu-latest",
-    supported: true,
-    priority: "secondary",
-    notes: "ARMv7 32-bit; Electron 43 is the final supported Electron line for this target",
   },
 ];
 
@@ -184,7 +150,7 @@ function buildCommandAll(): string {
 
 describe("build-matrix: exhaustive OS × Arch coverage", () => {
   it("defines the complete supported and legacy matrix", () => {
-    expect(MATRIX.length).toBe(10);
+    expect(MATRIX.length).toBe(7);
   });
 
   it("has 6 primary production targets", () => {
@@ -208,12 +174,11 @@ describe("build-matrix: exhaustive OS × Arch coverage", () => {
     expect(osSet.has("linux")).toBe(true);
   });
 
-  it("covers 5 architecture families", () => {
+  it("covers 4 architecture families", () => {
     const archSet = new Set(MATRIX.map((m) => m.arch));
     expect(archSet.has("x64")).toBe(true);
     expect(archSet.has("arm64")).toBe(true);
     expect(archSet.has("ia32")).toBe(true);
-    expect(archSet.has("armv7l")).toBe(true);
     expect(archSet.has("universal")).toBe(true);
   });
 
@@ -260,7 +225,7 @@ describe("build-matrix: electron-builder config per target", () => {
     expect(config.mac.artifactName).not.toContain("arm64");
   });
 
-  it("win config supports x64, ia32, arm64 via CLI flags", () => {
+  it("win config supports x64 and ia32 via CLI flags", () => {
     expect(config.nsis.artifactName).toContain("${arch}");
   });
 
